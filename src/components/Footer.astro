@@ -1,0 +1,47 @@
+---
+import { profileConfig } from "../config";
+import { url } from "@utils/url-utils";
+
+let introPage : string;
+
+if (profileConfig.introPage) {
+    introPage = profileConfig.introPage;
+} else {
+    introPage = import.meta.env.BASE_URL;
+}
+---
+
+<div class="footer">
+    <div class="text">
+        Made with ♥ by <a class="link" target="_blank" href={introPage}>{profileConfig.name}</a>.
+        <br>
+        <a class="link" target="_blank" href="https://beian.miit.gov.cn/" target="_blank">皖ICP备2025091754号-1</a>
+    </div>
+</div>
+
+<style>
+    .footer .text{
+        text-align: center;
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 14px;
+        z-index: 1;
+        color: rgb(0, 0, 0);
+        font-family: 'Comic Sans MS';
+    }
+    
+    .link {
+        color: inherit;
+        transition: color 0.3s ease;
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        text-decoration-thickness: 1.5px;
+    }
+    
+    .link:hover {
+        text-decoration: none;
+        color: #003b6e;
+    }
+</style>
