@@ -18,6 +18,7 @@ export const siteConfig: SiteConfig = {
 
 export const profileConfig: ProfileConfig = {
     avatar: "assets/Motues.jpg",
+    // avatar: "https://github.com/Motues.png",
     name: "Motues",
     description: "Like River!",
     introPage: "https://motues.top",
@@ -32,16 +33,16 @@ export const profileConfig: ProfileConfig = {
           color: "#b6a476",
         },
         {
+            name: "Minecraft",
+            url: "https://mc.motues.top",
+            icon: "vscode-icons:file-type-minecraft",
+            color: "",
+        },
+        {
             name: "GitHub",
             url: "https://github.com/Motues",
             icon: "fa6-brands:github",
             color: "#000000",
-        },
-        {
-            name: "QQ",
-            url: "tencent://message/?uin=2901987286&Site=&Menu=yes",
-            icon: "fa6-brands:qq",
-            color: "#00bcf9",
         },
         {
             name: "Netease",

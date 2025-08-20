@@ -1,0 +1,42 @@
+---
+import { Image } from "astro:assets";
+import path from "path"
+
+interface Props {
+    src: string;
+    alt?: string;
+    id?: string;
+    class?: string;
+    width?: number;
+    height?: number;
+}
+
+const { src, alt, id, width, height } = Astro.props;
+const className = Astro.props.class;
+
+const isLocal = !(
+    src.startsWith("/") ||
+    src.startsWith("http")
+);
+const isPublic = src.startsWith("/");
+
+let imageLoad;
+if (isLocal) {
+    const images = import.meta.glob<ImageMetadata>("../../assets/**", { import : "default" });
+    let imagePath = path.normalize(path.join("../../", "/", src)).replace(/\\/g, "/");
+    const image = images[imagePath];
+    if(!image) {
+        console.error(`\n[ERROR] Image file not found: ${imagePath.replace('../../', 'src/')}`);
+    }
+    imageLoad = await image();
+}
+---
+
+    { 
+    isLocal && imageLoad && 
+    <Image src={imageLoad} alt={alt || ""}  id={id || ""} style={"width: 100%; height: 100%;"}/>
+    }
+    {
+    !isLocal &&
+    <img src={src} alt={alt || ""}  id={id || ""} style={"width: 100%; height: 100%;"}/>
+    }

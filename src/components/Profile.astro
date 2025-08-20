@@ -2,8 +2,8 @@
 import path from 'path'
 import { Icon } from "astro-icon/components";
 import { profileConfig } from "../config";
-import { url } from "@utils/url-utils";
-import { Image } from 'astro:assets'
+import { Image } from 'astro:assets';
+import ImageModule from "./misc/ImageModule.astro"
 
 const config = profileConfig;
 
@@ -15,8 +15,11 @@ import img from "../assets/Motues.jpg"
 
 <div class="profile">
     <div class="avatar">
-        <Image src={img} alt={"avator"} class="image"/>
-         <!-- <img src={url(profileConfig.avatar)} alt="avator" class="image"/> -->
+        <div class="image">
+            <ImageModule src={profileConfig.avatar} alt="avator"/>
+        </div>
+        <!-- <Image src={img} alt={"avator"} class="image"/> -->
+        <!-- <img src={url(profileConfig.avatar)} alt="avator" class="image"/> -->
     </div>
     <div class="text"> 
         <div class="name">Motues</div>
@@ -50,8 +53,8 @@ import img from "../assets/Motues.jpg"
     text-align: center;
 }
 .avatar .image{
-    width: 100px;
-    height: 100px;
+    width: 100px !important;
+    height: 100px !important;
     border-radius: 50%;
     overflow: hidden;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);

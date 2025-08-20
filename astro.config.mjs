@@ -11,7 +11,8 @@ export default defineConfig({
       include: {
         "fa6-brands": ["*"],
         "fa6-solid": ["*"],
-        "simple-icons": ["*"]
+        "simple-icons": ["*"],
+        "vscode-icons": ["*"]
       }
     })
   ]
