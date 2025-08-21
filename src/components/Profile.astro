@@ -29,7 +29,7 @@ import img from "../assets/Motues.jpg"
     <div class="links">
         {config.links.map(item => (
             <div class="link">
-                <a href={item.url} target="_blank" rel="noreferrer" title={item.name}>
+                <a href={item.url} target="_blank" rel="noreferrer" data-title={item.name}>
                     <Icon name={item.icon} size={25} style={`color: ${item.color}`}/>
                 </a>
             </div>
@@ -104,7 +104,7 @@ import img from "../assets/Motues.jpg"
 }
 
 .link a::after {
-    content: attr(title);
+    content: attr(data-title);
     position: absolute;
     bottom: -40px;
     left: 50%;
