@@ -13,7 +13,7 @@ if (profileConfig.introPage) {
 
 <div class="footer">
     <div class="text">
-        Made with ♥ by <a class="link" target="_blank" href={introPage}>{profileConfig.name}</a>
+        Made with ❤ by <a class="link" target="_self" href={introPage}>{profileConfig.name}</a>
         <br>
         Powered by <a class="link" target="_blank" href="https://astro.build">Astro</a>
         <br>
@@ -37,13 +37,31 @@ if (profileConfig.introPage) {
     .link {
         color: inherit;
         transition: color 0.3s ease;
-        text-decoration: underline;
-        text-decoration-style: dotted;
-        text-decoration-thickness: 1.5px;
+        text-decoration: none;
+        position: relative;
+        display: inline-block;
+    }
+    
+    .link::before {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        border-bottom-style: dotted;
+        border-bottom-width: 2px;
+        /* background: currentColor; */
+        transition: transform 0.3s ease;
+        transform-origin: left;
+        transform: scaleX(1);
     }
     
     .link:hover {
-        text-decoration: none;
         color: #003b6e;
+    }
+    
+    .link:hover::before {
+        transform-origin: right;
+        transform: scaleX(0);
     }
 </style>
