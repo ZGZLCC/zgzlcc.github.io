@@ -11,6 +11,7 @@ export const siteConfig: SiteConfig = {
         enabled: false,
         url: "assets/background.png", // Relative to the /src directory. Relative to the /public directory if it starts with '/'
         color: "#f7f7ff" // If backgroundImage is not enabled, this will be used as the background color
+                           // You can find more colors here: https://zhongguose.com/
     },
 
     favicon: "/favicon/favicon.ico" // Path of the favicon, relative to the /public directory
@@ -30,7 +31,7 @@ export const profileConfig: ProfileConfig = {
           name: "Blog",
           url: "https://github.motues.top",
           icon: "fa6-solid:book",
-          color: "#b6a476",
+          color: "#72b6b3",
         },
         {
             name: "Minecraft",
@@ -49,6 +50,18 @@ export const profileConfig: ProfileConfig = {
             url: "https://music.163.com/#/user/home?id=1601379853",
             icon: "simple-icons:neteasecloudmusic",
             color: "#ff2822",
-        }
+        },
+        // {
+        //     name: "QQ",
+        //     url: "https://res.abeim.cn/api/qq/?qq=2901987386",
+        //     icon: "fa6-brands:qq",
+        //     color: "#10a2d7ff",
+        // },
+        // {
+        //     name: "Mail",
+        //     url: "mailto:2901987386@qq.com",
+        //     icon: "fa6-solid:envelope",
+        //     color: "#b4a992"
+        // },
     ]
 }
