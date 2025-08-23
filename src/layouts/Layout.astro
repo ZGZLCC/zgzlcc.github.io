@@ -5,7 +5,8 @@ import { url } from '@utils/url-utils';
 const pageTitle = `${siteConfig.title} - ${siteConfig.subTitle}`;
 const backgroundImageEnabled = siteConfig.backgroundImage.enabled;
 const backgroundImageUrl = url(siteConfig.backgroundImage.url);
-const backgroundColor = siteConfig.backgroundImage.color;
+const backgroundColorLight = siteConfig.backgroundImage.colorLigth;
+const backgroundColorDark = siteConfig.backgroundImage.colorDark;
 
 
 ---
@@ -17,32 +18,56 @@ const backgroundColor = siteConfig.backgroundImage.color;
     <link rel="icon" href={url(siteConfig.favicon)} type="image/x-icon">
     <title>{pageTitle}</title>
     
-    <style define:vars={{backgroundImageUrl, backgroundColor}}>
-
-        html, body { 
-            margin: 0;
-            padding: 0;
-        }
-
-        html {
-            height: 100%;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            background-color: var(--backgroundColor);
-            position: relative;
-            height: 100%;
-            width: 100%;
-        }
-        
-    </style>
 </head>
 <body style={backgroundImageEnabled ? `background-image: url(${backgroundImageUrl})` : ''}>
     <slot />
 </body>
 
 </html>
+
+
+<style is:global define:vars={{backgroundColorLight, backgroundColorDark}}>
+/* 默认主体，白天模式 */
+:root {
+    --bg-color: var(--backgroundColorLight);
+    --text-color: #000000;
+    --footer-text-color: #000000;
+    --link-color: #003b6e;
+    --motto-text-color: #999;
+    --border-color: gray;
+
+    --image-shadow-color: rgba(0, 0, 0, 0.15);
+}
+/* 黑暗模式 */
+[data-theme="dark"] {
+    --bg-color: var(--backgroundColorDark);
+    --text-color: #ffffff;
+    --footer-text-color: #ffffff;
+    --link-color: #57ace7;
+    --motto-text-color: #c9d0d4;
+    --border-color: gray;
+
+    --image-shadow-color: rgba(59, 130, 246, 0.4);
+}
+
+ html, body { 
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    height: 100%;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    position: relative;
+    height: 100%;
+    width: 100%;
+}
+</style>

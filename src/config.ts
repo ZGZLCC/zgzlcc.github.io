@@ -10,8 +10,10 @@ export const siteConfig: SiteConfig = {
     backgroundImage: {
         enabled: false,
         url: "assets/background.png", // Relative to the /src directory. Relative to the /public directory if it starts with '/'
-        color: "#f7f7ff" // If backgroundImage is not enabled, this will be used as the background color
-                           // You can find more colors here: https://zhongguose.com/
+        colorLigth: "#f7f7ff",
+        colorDark: "#031116",
+        // If backgroundImage is not enabled, this will be used as the background color
+        // You can find more colors here: https://zhongguose.com/
     },
 
     favicon: "/favicon/favicon.ico" // Path of the favicon, relative to the /public directory
@@ -27,6 +29,7 @@ export const profileConfig: ProfileConfig = {
         // You will need to install the corresponding icon set if it's not already included
         // `pnpm add @iconify-json/<icon-set-name>`
         // Then add icon to defineConfig.integrationsin.icon in astro.config.mjs
+        // The colors a best to be clearly visible in both light and dark environments 
         {
           name: "Blog",
           url: "https://github.motues.top",
@@ -43,7 +46,7 @@ export const profileConfig: ProfileConfig = {
             name: "GitHub",
             url: "https://github.com/Motues",
             icon: "fa6-brands:github",
-            color: "#000000",
+            color: "#888",
         },
         {
             name: "Netease",
@@ -57,11 +60,11 @@ export const profileConfig: ProfileConfig = {
         //     icon: "fa6-brands:qq",
         //     color: "#10a2d7ff",
         // },
-        // {
-        //     name: "Mail",
-        //     url: "mailto:2901987386@qq.com",
-        //     icon: "fa6-solid:envelope",
-        //     color: "#b4a992"
-        // },
+        {
+            name: "Mail",
+            url: "mailto:2901987386@qq.com",
+            icon: "fa6-solid:envelope",
+            color: "#b4a992"
+        },
     ]
 }

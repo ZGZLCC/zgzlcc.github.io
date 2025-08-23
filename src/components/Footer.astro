@@ -13,15 +13,16 @@ if (profileConfig.introPage) {
 
 <div class="footer">
     <div class="text">
-        Made with ❤ by <a class="link" target="_self" href={introPage}>{profileConfig.name}</a>
+        Made with ❤ by <a target="_self" href={introPage}>{profileConfig.name}</a>
         <br>
-        Powered by <a class="link" target="_blank" href="https://astro.build">Astro</a>
+        Powered by <a target="_blank" href="https://astro.build">Astro</a>
         <br>
-        <a class="link" target="_blank" href="https://beian.miit.gov.cn/" target="_blank">皖ICP备2025091754号-1</a>
+        <a target="_blank" href="https://beian.miit.gov.cn/" target="_blank">皖ICP备2025091754号-1</a>
     </div>
 </div>
 
 <style>
+
     .footer .text{
         text-align: center;
         position: fixed;
@@ -30,19 +31,19 @@ if (profileConfig.introPage) {
         transform: translateX(-50%);
         font-size: 14px;
         z-index: 1;
-        color: rgb(0, 0, 0);
+        color: var(--footer-text-color);
         font-family: 'Comic Sans MS';
     }
     
-    .link {
+    .footer a {
         color: inherit;
-        transition: color 0.3s ease;
+        /* transition: color 0.3s ease; */
         text-decoration: none;
         position: relative;
         display: inline-block;
     }
     
-    .link::before {
+    .footer a::before {
         content: "";
         position: absolute;
         bottom: 0;
@@ -52,15 +53,15 @@ if (profileConfig.introPage) {
         border-bottom-width: 2px;
         /* background: currentColor; */
         transition: transform 0.3s ease;
-        transform-origin: left;
+        transform-origin: right;
         transform: scaleX(1);
     }
     
-    .link:hover {
-        color: #003b6e;
+    .footer a:hover {
+        color: var(--link-color);
     }
     
-    .link:hover::before {
+    .footer a:hover::before {
         transform-origin: right;
         transform: scaleX(0);
     }

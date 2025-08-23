@@ -1,4 +1,6 @@
 ---
+// ImageModule 对应的 CSS 需要设置为 is::global 才能被正确应用
+
 import { Image } from "astro:assets";
 import path from "path"
 
@@ -31,12 +33,13 @@ if (isLocal) {
     imageLoad = await image();
 }
 ---
-
+<!-- <div class={className}> -->
     { 
     isLocal && imageLoad && 
-    <Image src={imageLoad} alt={alt || ""}  id={id || ""} style={"width: 100%; height: 100%;"}/>
+    <Image src={imageLoad} alt={alt || ""}  id={id || ""} class={className || ""}/>
     }
     {
     !isLocal &&
-    <img src={src} alt={alt || ""}  id={id || ""} style={"width: 100%; height: 100%;"}/>
+    <img src={src} alt={alt || ""}  id={id || ""} class={className || ""}/>
     }
+<!-- </div> -->
