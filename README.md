@@ -18,21 +18,19 @@
 
 ## 🔨 配置
 
-网站配置文件在 `src/config.ts` 中，你可以修改里面的内容来配置你的个人主页；网站根路径需要在 `astro.config.mjs` 中配置。
+网站配置文件在 `src/config.ts` 中，你可以修改里面的内容来配置你的个人主页；网站根路径需要在 `astro.config.mjs` 中配置
 
 **网站根路径**
-、
+
 配置文件为 [`astro.config.mjs`](astro.config.mjs) ，通过修改 `defineConfig.site` 属性来设置网站根路径
 
 **网站基本信息**
 
-配置文件为 [`/src/config.ts`](./src/config.ts) ，`siteConfig` 记录网站的配置信息，包括网站标题、图标、背景等，`profileConfig` 存储个人资料信息，包括头像、姓名、简介等。
-
-具体信息可以参考 [`/src/config.ts`](./src/config.ts)。
+配置文件为 [`/src/config.ts`](./src/config.ts) ，`siteConfig` 记录网站的配置信息，包括网站标题、图标、背景等，`profileConfig` 存储个人资料信息，包括头像、姓名、简介等
 
 **页脚**
 
-页脚文件为 [`/src/components/Footer.astro`](./src/components/Footer.astro) ，`Footer` 组件记录了页脚的基本信息，可以自行修改。
+页脚文件为 [`/src/components/Footer.astro`](./src/components/Footer.astro) ，`Footer` 组件记录了页脚的基本信息，可以自行修改
 
 
 ## ⚡ 指令
