@@ -18,9 +18,12 @@ jobs:
       with:
         node-version: '20'
         cache: 'pnpm'
+      # ontinue-on-error: true
         
     - name: Install pnpm
-      run: npm install -g pnpm
+      uses: pnpm/action-setup@v3
+      with:
+          version: '10'
       
     - name: Install dependencies
       run: pnpm install
