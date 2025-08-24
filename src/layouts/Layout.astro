@@ -5,8 +5,6 @@ import { url } from '@utils/url-utils';
 const pageTitle = `${siteConfig.title} - ${siteConfig.subTitle}`;
 const backgroundImageEnabled = siteConfig.backgroundImage.enabled;
 const backgroundImageUrl = url(siteConfig.backgroundImage.url);
-const backgroundColorLight = siteConfig.backgroundImage.colorLigth;
-const backgroundColorDark = siteConfig.backgroundImage.colorDark;
 
 
 ---
@@ -26,10 +24,10 @@ const backgroundColorDark = siteConfig.backgroundImage.colorDark;
 </html>
 
 
-<style is:global define:vars={{backgroundColorLight, backgroundColorDark}}>
+<style is:global define:vars={{}}>
 /* 默认主体，白天模式 */
 :root {
-    --bg-color: var(--backgroundColorLight);
+    --bg-color: #f7f7ff;
     --text-color: #000000;
     --footer-text-color: #000000;
     --link-color: #003b6e;
@@ -40,7 +38,7 @@ const backgroundColorDark = siteConfig.backgroundImage.colorDark;
 }
 /* 黑暗模式 */
 [data-theme="dark"] {
-    --bg-color: var(--backgroundColorDark);
+    --bg-color: #031116;
     --text-color: #ffffff;
     --footer-text-color: #ffffff;
     --link-color: #57ace7;

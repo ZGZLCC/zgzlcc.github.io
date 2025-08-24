@@ -8,12 +8,8 @@ export const siteConfig: SiteConfig = {
     subTitle: "记录生活",
 
     backgroundImage: {
-        enabled: false,
+        enabled: false, // If backgroundImage is not enabled, this will be used as the background color
         url: "assets/background.png", // Relative to the /src directory. Relative to the /public directory if it starts with '/'
-        colorLigth: "#f7f7ff",
-        colorDark: "#031116",
-        // If backgroundImage is not enabled, this will be used as the background color
-        // You can find more colors here: https://zhongguose.com/
     },
 
     favicon: "/favicon/favicon.ico" // Path of the favicon, relative to the /public directory
@@ -32,9 +28,9 @@ export const profileConfig: ProfileConfig = {
         // The colors a best to be clearly visible in both light and dark environments 
         {
           name: "Blog",
-          url: "https://github.motues.top",
+          url: "https://blog.motues.top",
           icon: "fa6-solid:book",
-          color: "#72b6b3",
+          color: "#72b6b3", // You can find more colors here: https://zhongguose.com/
         },
         {
             name: "Minecraft",

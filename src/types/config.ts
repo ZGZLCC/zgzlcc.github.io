@@ -5,8 +5,6 @@ export type SiteConfig = {
     backgroundImage: {
         enabled: boolean;
         url: string;
-        colorLigth: string;
-        colorDark: string;
     };
 
     favicon: string;
