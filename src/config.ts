@@ -29,8 +29,14 @@ export const profileConfig: ProfileConfig = {
         {
           name: "Blog",
           url: "https://blog.motues.top",
-          icon: "fa6-solid:book",
+          icon: "fa6-solid:paper-plane",
           color: "#72b6b3", // You can find more colors here: https://zhongguose.com/
+        },
+        {
+            name: "Note",
+            url: "https://note.motues.top",
+            icon: "fa6-solid:book",
+            color: "#b4a992",
         },
         {
             name: "Minecraft",
@@ -60,7 +66,7 @@ export const profileConfig: ProfileConfig = {
             name: "Mail",
             url: "mailto:2901987386@qq.com",
             icon: "fa6-solid:envelope",
-            color: "#b4a992"
+            color: "#43a4d1ff"
         },
     ]
 }
