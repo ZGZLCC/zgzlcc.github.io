@@ -64,7 +64,7 @@ export const profileConfig: ProfileConfig = {
         // },
         {
             name: "Mail",
-            url: "mailto:2901987386@qq.com",
+            url: "mailto:me@motues.top",
             icon: "fa6-solid:envelope",
             color: "#43a4d1ff"
         },
