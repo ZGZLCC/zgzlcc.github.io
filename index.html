@@ -1,4 +1,119 @@
-hello world
-<script>
-  console.log('hello world')
-</script>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欢迎来到我的网站</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            max-width: 90%;
+            width: 500px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .btn {
+            background: #fff;
+            color: #667eea;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .features {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .feature {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            min-width: 120px;
+        }
+
+        .feature h3 {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>欢迎来到我们的网站</h1>
+        <p>这是一个现代化的网页开始界面，为您提供最佳的用户体验。立即开始探索我们的功能和服务。</p>
+        <button class="btn" onclick="enterSite()">开始探索</button>
+        
+        <div class="features">
+            <div class="feature">
+                <h3>🚀 快速</h3>
+                <p>极速加载</p>
+            </div>
+            <div class="feature">
+                <h3>📱 响应式</h3>
+                <p>适配所有设备</p>
+            </div>
+            <div class="feature">
+                <h3>🔒 安全</h3>
+                <p>数据保护</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function enterSite() {
+            // 这里可以添加跳转到主页面的逻辑
+            alert('欢迎进入网站！');
+            // 示例：window.location.href = 'main.html';
+        }
+    </script>
+</body>
+</html>
