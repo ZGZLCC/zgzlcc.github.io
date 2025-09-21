@@ -12,15 +12,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function calculateDays() {
     const today = new Date();
-    const currentYear = today.getFullYear();
-    let birthday = new Date(currentYear, 4, 22); // 5月22日(月份从0开始)
+    const targetDate = new Date(2019, 0, 30); // 2019年1月30日 (月份从0开始，所以0代表1月)
     
-    // 如果今年生日已过，计算明年生日
-    if (today > birthday) {
-        birthday = new Date(currentYear + 1, 4, 22);
-    }
+    // 计算两个日期之间的毫秒差
+    const diffTime = today - targetDate;
     
-    const diffTime = birthday - today;
+    // 将毫秒差转换为天数
+    // Math.ceil确保我们得到完整的天数
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     // 更新页面上的元素
