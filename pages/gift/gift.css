@@ -1,0 +1,40 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    padding: 0;
+    background-color: #fde6e6;
+    position: relative;
+}
+
+.media-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.media {
+  width: 100%;
+  height: 60vh;
+  margin-bottom: 20rpx;
+}
+
+.hint {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.save-btn {
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #FF9EB5;
+    color: white;
+    border-radius: 20px;
+    width: 200px;
+    padding: 12px 0;
+}
