@@ -1,108 +1,81 @@
-Page({
-    data: {
-      mediaPath: '/images/gift.png' // 图片路径需与wxml中一致
-    },
-  
-    onLoad() {
-      // 初始化时检查图片是否存在
-      this.checkImageExists()
-    },
-  
-    // 检查图片是否存在
-    checkImageExists() {
-        const fs = wx.getFileSystemManager()
-        try {
-          fs.accessSync('images/gift.png') // 正确相对路径
-          console.log('图片验证通过')
-        } catch (e) {
-          console.error('图片访问失败:', e)
-          wx.showToast({
-            title: '资源加载失败',
-            icon: 'error'
-          })
-          // 建议添加备用图片加载方案
-          this.setData({
-            mediaPath: 'cloud://your-env-id/images/fallback.png' 
-          })
-        }
-      },
-  
+document.addEventListener('DOMContentLoaded', function() {
+    const giftImage = document.getElementById('giftImage');
+    const saveBtn = document.getElementById('saveBtn');
+    
     // 图片预览功能
-    previewMedia() {
-      wx.previewImage({
-        current: this.data.mediaPath, // 当前显示图片
-        urls: [this.data.mediaPath],  // 需要预览的图片列表
-        fail: (err) => {
-          console.error('预览失败:', err)
-          wx.showToast({
-            title: '预览失败，请重试',
-            icon: 'none'
-          })
-        }
-      })
-    },
-  
+    giftImage.addEventListener('click', previewMedia);
+    
     // 保存到相册功能
-    saveToAlbum() {
-      this.checkPermission(() => {
-        wx.downloadFile({
-          url: this.data.mediaPath,
-          success: (res) => {
-            if (res.statusCode === 200) {
-              wx.saveImageToPhotosAlbum({
-                filePath: res.tempFilePath,
-                success: () => {
-                  wx.showToast({
-                    title: '保存成功',
-                    icon: 'success'
-                  })
-                },
-                fail: (err) => {
-                  console.error('保存失败:', err)
-                  this.showAuthModal('相册')
-                }
-              })
-            }
-          },
-          fail: (err) => {
-            console.error('下载失败:', err)
-            wx.showToast({
-              title: '图片下载失败',
-              icon: 'none'
-            })
-          }
-        })
-      })
-    },
-  
-    // 权限检查
-    checkPermission(callback) {
-      wx.getSetting({
-        success: (res) => {
-          if (!res.authSetting['scope.writePhotosAlbum']) {
-            wx.authorize({
-              scope: 'scope.writePhotosAlbum',
-              success: callback,
-              fail: () => this.showAuthModal('相册')
-            })
-          } else {
-            callback()
-          }
+    saveBtn.addEventListener('click', saveToAlbum);
+    
+    // 检查图片是否存在
+    checkImageExists();
+});
+
+// 检查图片是否存在
+function checkImageExists() {
+    const img = document.getElementById('giftImage');
+    img.onerror = function() {
+        console.error('图片加载失败');
+        // 这里可以设置备用图片
+        // img.src = '备用图片路径';
+        alert('资源加载失败');
+    };
+}
+
+// 图片预览功能
+function previewMedia() {
+    const img = document.getElementById('giftImage');
+    
+    // 创建模态框
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'imageModal';
+    
+    const modalContent = document.createElement('img');
+    modalContent.className = 'modal-content';
+    modalContent.src = img.src;
+    
+    const closeBtn = document.createElement('span');
+    closeBtn.className = 'close';
+    closeBtn.innerHTML = '&times;';
+    
+    modal.appendChild(modalContent);
+    modal.appendChild(closeBtn);
+    document.body.appendChild(modal);
+    
+    // 显示模态框
+    modal.style.display = 'block';
+    
+    // 关闭模态框
+    closeBtn.onclick = function() {
+        modal.style.display = 'none';
+        document.body.removeChild(modal);
+    };
+    
+    // 点击模态框外部关闭
+    modal.onclick = function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+            document.body.removeChild(modal);
         }
-      })
-    },
-  
-    // 显示权限弹窗
-    showAuthModal(type) {
-      wx.showModal({
-        title: '权限申请',
-        content: `需要${type}权限才能继续操作`,
-        confirmText: '去设置',
-        success: (res) => {
-          if (res.confirm) {
-            wx.openSetting()
-          }
-        }
-      })
-    }
-  })
+    };
+}
+
+// 保存到相册功能
+function saveToAlbum() {
+    const img = document.getElementById('giftImage');
+    
+    // 创建临时链接下载图片
+    const link = document.createElement('a');
+    link.href = img.src;
+    link.download = 'gift.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    alert('图片已开始下载，请在下载文件夹中查看');
+}
+
+// 注意：由于浏览器安全限制，网页端无法直接保存到系统相册
+// 上述实现改为触发浏览器下载功能
