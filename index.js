@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     calculateDays();
     // 设置页面标题
-    document.title = '时光胶囊';
+    document.title = 'chan&chen';
     
     // 绑定按钮点击事件
     const giftBtn = document.getElementById('giftBtn');
@@ -37,5 +37,5 @@ function calculateDays() {
 
 function navigateToGift() {
     // 跳转到礼物页面
-    window.location.href = '../gift/gift.html';
+    window.location.href = 'pages/gift/gift.html';
 }
