@@ -27,6 +27,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    margin-top: 20px; /* 添加顶部边距 */
 }
 
 .slideshow-slide {
@@ -64,6 +65,19 @@ body {
     flex: 1;
     width: 100%;
     padding-top: 50px; /* 调整顶部间距 */
+}
+
+.welcome-text {
+    text-align: center;
+    margin-bottom: 36px;
+    font-family: 'Arial Rounded MT Bold', 'Helvetica Rounded', Arial, sans-serif;
+}
+
+.welcome-line {
+    font-size: 32px;
+    color: #f06070;
+    margin: 5px 0;
+    font-weight: bold;
 }
 
 .date {
