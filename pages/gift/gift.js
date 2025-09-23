@@ -5,8 +5,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 图片预览功能
     giftImage.addEventListener('click', previewMedia);
     
-    // 保存到相册功能
-    saveBtn.addEventListener('click', saveToAlbum);
+    // 返回首页功能
+    saveBtn.addEventListener('click', backToHome);
     
     // 检查图片是否存在
     checkImageExists();
@@ -62,20 +62,7 @@ function previewMedia() {
     };
 }
 
-// 保存到相册功能
-function saveToAlbum() {
-    const img = document.getElementById('giftImage');
-    
-    // 创建临时链接下载图片
-    const link = document.createElement('a');
-    link.href = img.src;
-    link.download = 'gift.png';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    alert('图片已开始下载，请在下载文件夹中查看');
+// 返回首页功能
+function backToHome() {
+    window.location.href = '../../index.html';
 }
-
-// 注意：由于浏览器安全限制，网页端无法直接保存到系统相册
-// 上述实现改为触发浏览器下载功能
