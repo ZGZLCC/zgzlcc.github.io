@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     // 设置页面标题
-    document.title = 'chan&chen';
+    document.title = 'Chan&Chen';
     
     // 绑定按钮点击事件
     const giftBtn = document.getElementById('giftBtn');
