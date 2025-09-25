@@ -1,0 +1,202 @@
+---
+const pageTitle = "今日礼物";
+---
+
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{pageTitle}</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        padding: 0;
+        background-color: #fde6e6;
+        position: relative;
+      }
+
+      .media-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+      }
+
+      .media {
+        max-width: 90%;
+        max-height: 60vh;
+        margin-bottom: 20px;
+        cursor: pointer;
+      }
+
+      .hint {
+        font-size: 14px;
+        color: #999;
+      }
+
+      .save-btn {
+        position: absolute;
+        bottom: 50px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #FF9EB5;
+        color: white;
+        border-radius: 20px;
+        width: 200px;
+        padding: 12px 0;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      .save-btn:hover {
+        background-color: #ff8aa2;
+      }
+
+      /* 图片预览模态框 */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.9);
+      }
+
+      .modal-content {
+        margin: auto;
+        display: block;
+        width: 80%;
+        max-width: 700px;
+        max-height: 80%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .close {
+        position: absolute;
+        top: 15px;
+        right: 35px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .close:hover {
+        color: #bbb;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- 媒体展示区域 -->
+      <div class="media-container">
+        <img class="media" src="/images/paintings/gift.png" alt="礼物图片" id="giftImage">
+        <p class="hint">点击图片可预览</p>
+      </div>
+
+      <!-- 视频预留位置 -->
+      <!-- <video class="media" src="视频地址" controls></video> -->
+
+      <button class="save-btn" id="saveBtn">返回首页</button>
+    </div>
+    
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const giftImage = document.getElementById('giftImage');
+        const saveBtn = document.getElementById('saveBtn');
+        
+        // 图片预览功能
+        if (giftImage) {
+          giftImage.addEventListener('click', previewMedia);
+        }
+        
+        // 返回首页功能
+        if (saveBtn) {
+          saveBtn.addEventListener('click', backToHome);
+        }
+        
+        // 检查图片是否存在
+        checkImageExists();
+      });
+
+      // 检查图片是否存在
+      function checkImageExists() {
+        const img = document.getElementById('giftImage');
+        if (img) {
+          img.onerror = function() {
+            console.error('图片加载失败');
+            // 这里可以设置备用图片
+            // img.src = '备用图片路径';
+            alert('资源加载失败');
+          };
+        }
+      }
+
+      // 图片预览功能
+      function previewMedia() {
+        const img = document.getElementById('giftImage');
+        if (!img) return;
+        
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.id = 'imageModal';
+        
+        const modalContent = document.createElement('img');
+        modalContent.className = 'modal-content';
+        modalContent.src = (img as HTMLImageElement).src;
+        
+        const closeBtn = document.createElement('span');
+        closeBtn.className = 'close';
+        closeBtn.innerHTML = '&times;';
+        
+        modal.appendChild(modalContent);
+        modal.appendChild(closeBtn);
+        document.body.appendChild(modal);
+        
+        // 显示模态框
+        modal.style.display = 'block';
+        
+        // 关闭模态框
+        closeBtn.onclick = function() {
+          modal.style.display = 'none';
+          document.body.removeChild(modal);
+        };
+        
+        // 点击模态框外部关闭
+        modal.onclick = function(event) {
+          if (event.target === modal) {
+            modal.style.display = 'none';
+            document.body.removeChild(modal);
+          }
+        };
+      }
+
+      // 返回首页功能
+      function backToHome() {
+        window.location.href = '/';
+      }
+    </script>
+  </body>
+</html>

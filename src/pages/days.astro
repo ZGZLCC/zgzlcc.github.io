@@ -1,0 +1,142 @@
+---
+const pageTitle = "相爱天数";
+---
+
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{pageTitle}</title>
+    <style>
+      body {
+        font-family: 'Arial', sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #fde6e6;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .container {
+        text-align: center;
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        max-width: 90%;
+        width: 500px;
+      }
+
+      .content {
+        margin-bottom: 2rem;
+      }
+
+      .date {
+        font-size: 1.2rem;
+        color: #666;
+        margin-bottom: 1rem;
+      }
+
+      .countdown {
+        font-size: 1.5rem;
+        color: #333;
+      }
+
+      .days {
+        display: block;
+        font-size: 3rem;
+        font-weight: bold;
+        color: #ff7aae;
+        margin: 1rem 0;
+      }
+
+      .back-btn {
+        background-color: #FF9EB5;
+        border: none;
+        color: white;
+        padding: 12px 24px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 20px;
+        transition: background-color 0.3s;
+        width: 200px;
+      }
+
+      .back-btn:hover {
+        background-color: #ff8aa2;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="content">
+        <div class="date" id="todayDate">今天是</div>
+        <div class="countdown">
+          <span>Chan与Chen已经相爱</span>
+          <span class="days" id="daysLeft">0天</span>
+        </div>
+        <div class="countdown">
+          <span>Chan与Chen在一起了</span>
+          <span class="days" id="daysTogether">0天</span>
+        </div>
+      </div>
+      <button class="back-btn" id="backBtn">返回首页</button>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        calculateDays();
+        
+        // 设置页面标题
+        document.title = '相爱天数';
+        
+        // 绑定返回按钮点击事件
+        const backBtn = document.getElementById('backBtn');
+        if (backBtn) {
+          backBtn.addEventListener('click', function() {
+            window.location.href = '/';
+          });
+        }
+      });
+
+      function calculateDays() {
+        const today = new Date();
+        const targetDate = new Date(2019, 0, 30); // 2019年1月30日 (月份从0开始，所以0代表1月)
+        const togetherDate = new Date(2022, 1, 1); // 2022年2月1日 (月份从0开始，所以1代表2月)
+        
+        // 计算两个日期之间的毫秒差
+        const diffTime = today.getTime() - targetDate.getTime();
+        const togetherTime = today.getTime() - togetherDate.getTime();
+        
+        // 将毫秒差转换为天数
+        // Math.ceil确保我们得到完整的天数
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const togetherDays = Math.ceil(togetherTime / (1000 * 60 * 60 * 24));
+        
+        // 更新页面上的元素
+        const daysLeftElement = document.getElementById('daysLeft');
+        const daysTogetherElement = document.getElementById('daysTogether');
+        const todayDateElement = document.getElementById('todayDate');
+        
+        if (daysLeftElement) {
+          daysLeftElement.textContent = diffDays + '天';
+        }
+        
+        if (daysTogetherElement) {
+          daysTogetherElement.textContent = togetherDays + '天';
+        }
+        
+        if (todayDateElement) {
+          todayDateElement.textContent = 
+            `今天是${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+        }
+      }
+    </script>
+  </body>
+</html>
