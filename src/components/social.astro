@@ -1,0 +1,9 @@
+---
+import '../styles/navigation.css';
+
+const { platform, username } = Astro.props;
+---
+
+<div class="nav-links">
+    <a href={`https://www.${platform}.com/${username}`}>{platform}</a>
+</div>

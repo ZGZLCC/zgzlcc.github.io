@@ -1,0 +1,22 @@
+.content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    flex: 1;
+    width: 100%;
+    padding-top: 50px;
+    flex-shrink: 0;
+}
+
+.welcome-text {
+    text-align: center;
+    margin-bottom: 36px;
+}
+
+.welcome-line {
+    font-size: 32px;
+    color: #f06070;
+    margin: 5px 0;
+    font-weight: bold;
+}

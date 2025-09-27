@@ -1,4 +1,11 @@
 ---
+import '../styles/global.css';
+
+import Footer from '../components/footer.astro';
+import Header from '../components/header.astro';
+import Slideshow from '../components/slideshow.astro';
+import Welcome from '../components/welcome.astro';
+
 const pageTitle = "Chan&Chen";
 ---
 
@@ -7,202 +14,35 @@ const pageTitle = "Chan&Chen";
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <title>{pageTitle}</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family: 'Noto Serif SC', 'Segoe UI', Roboto, serif;
-      }
-
-      .container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        min-height: 100vh;
-        padding: 0;
-        background-color: #fde6e6;
-        position: relative;
-      }
-
-      /* 添加轮播图样式 */
-      .slideshow-container {
-        position: relative;
-        width: 100%;
-        height: 300px;
-        overflow: hidden;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 20px; /* 添加顶部边距 */
-      }
-
-      .slideshow-slide {
-        display: none;
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-      }
-
-      .slideshow-slide img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain; /* 完整显示照片，可能会有留白 */
-        object-position: center;
-      }
-
-      /* 淡入淡出效果 */
-      .fade {
-        animation-name: fade;
-        animation-duration: 1.5s;
-      }
-
-      @keyframes fade {
-        from {opacity: .4}
-        to {opacity: 1}
-      }
-
-      .content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-        flex: 1;
-        width: 100%;
-        padding-top: 50px; /* 调整顶部间距 */
-      }
-
-      .welcome-text {
-        text-align: center;
-        margin-bottom: 36px;
-      }
-
-      .welcome-line {
-        font-size: 32px;
-        color: #f06070;
-        margin: 5px 0;
-        font-weight: bold;
-      }
-
-      .date {
-        font-size: 16px;
-        color: #888;
-        margin-bottom: 20px;
-      }
-
-      .countdown {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        font-size: 24px;
-        color: #FF6B81;
-        margin-bottom: 20px;
-      }
-
-      .days {
-        font-size: 48px;
-        font-weight: bold;
-        margin: 10px 0;
-      }
-
-      .buttons-container {
-        position: absolute;
-        bottom: 50px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-      }
-
-      .gift-btn {
-        background-color: #FF9EB5;
-        color: white;
-        border-radius: 20px;
-        width: 200px;
-        padding: 12px 0;
-        border: none;
-        cursor: pointer;
-        font-size: 16px;
-      }
-
-      .gift-btn:hover {
-        background-color: #ff8aa2;
-      }
-    </style>
   </head>
   <body>
-    <div class="container">
-      <!-- 添加照片轮播区域 -->
-      <div class="slideshow-container">
-        <div class="slideshow-slide fade">
-          <img src="/images/xiezhen/xz1.JPG" alt="照片1">
-        </div>
-        <div class="slideshow-slide fade">
-          <img src="/images/xiezhen/xz2.JPG" alt="照片2">
-        </div>
-        <div class="slideshow-slide fade">
-          <img src="/images/xiezhen/xz3.JPG" alt="照片3">
-        </div>
-        <div class="slideshow-slide fade">
-          <img src="/images/xiezhen/xz4.JPG" alt="照片4">
-        </div>
-        <div class="slideshow-slide fade">
-          <img src="/images/xiezhen/xz5.JPG" alt="照片5">
-        </div>
-        <div class="slideshow-slide fade">
-          <img src="/images/xiezhen/xz6.jpg" alt="照片6">
-        </div>
-      </div>
-      
-      <div class="content">
-        <div class="welcome-text">
-          <div class="welcome-line">欢迎来到</div>
-          <div class="welcome-line">我们的主页</div>
-        </div>
-      </div>
-      <div class="buttons-container">
-        <button class="gift-btn" id="daysBtn">相爱天数</button>
-        <button class="gift-btn" id="giftBtn">拆开礼物</button>
-      </div>
+    <Header />
+    <Slideshow />
+    <Welcome />
+    <div class="buttons-container">
+      <button class="button" id="daysBtn">相爱天数</button>
+      <button class="button" id="giftBtn">拆开礼物</button>
     </div>
-    
+    <Footer />
+
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        // 设置页面标题
-        document.title = 'Chan&Chen';
-        
-        // 绑定按钮点击事件
         const giftBtn = document.getElementById('giftBtn');
         if (giftBtn) {
-          giftBtn.addEventListener('click', navigateToGift);
+          giftBtn.addEventListener('click', function() {
+            window.location.href = '/gift/';
+          });
         }
-        
-        // 为相爱天数按钮添加点击事件
         const daysBtn = document.getElementById('daysBtn');
         if (daysBtn) {
-          daysBtn.addEventListener('click', navigateToDays);
+          daysBtn.addEventListener('click', function() {
+            window.location.href = '/days/';
+            });
         }
         
         // 初始化照片轮播
         initSlideshow();
       });
-
-      function navigateToGift() {
-        // 跳转到礼物页面
-        window.location.href = '/gift/';
-      }
-
-      function navigateToDays() {
-        // 跳转到相爱天数页面
-        window.location.href = '/days/';
-      }
-
       // 照片轮播功能
       function initSlideshow() {
         let slideIndex = 0;

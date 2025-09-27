@@ -1,0 +1,7 @@
+---
+const { classes, location, number, type } = Astro.props;
+---
+
+<div class={`${classes}`}>
+    <img src={`/images/${location}${number}.${type}`} alt={`照片${number}`}>
+</div>

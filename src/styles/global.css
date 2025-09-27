@@ -1,0 +1,31 @@
+@import 'button.css';
+
+html {
+  background-color: #fde6e6;
+  font-family: 'Noto Serif SC', 'Segoe UI', Roboto, serif;
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  width: 100%;
+  min-height: 100vh;
+  padding: 0;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* 固定在按钮下方的footer */
+.fixed-footer {
+  position: fixed;
+  bottom: 5px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  z-index: 5;
+}
