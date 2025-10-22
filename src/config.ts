@@ -29,8 +29,8 @@ export const profileConfig: ProfileConfig = {
         {
           name: "Blog",
           url: "https://blog.motues.top",
-          icon: "fa6-solid:paper-plane",
-          color: "#72b6b3", // You can find more colors here: https://zhongguose.com/
+          icon: "fa6-solid:tree",
+          color: "#0dbc79", // You can find more colors here: https://zhongguose.com/
         },
         {
             name: "Note",
@@ -39,10 +39,10 @@ export const profileConfig: ProfileConfig = {
             color: "#b4a992",
         },
         {
-            name: "Minecraft",
-            url: "https://mc.motues.top",
-            icon: "vscode-icons:file-type-minecraft",
-            color: "",
+            name: "Server",
+            url: "https://server.motues.top",
+            icon: "fa6-solid:server",
+            color: "#72b6b3",
         },
         {
             name: "GitHub",
