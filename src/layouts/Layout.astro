@@ -1,6 +1,9 @@
 ---
 import { siteConfig } from '@/config';
 import { url } from '@utils/url-utils';
+import ThemeIcon from '@components/control/ThemeIcon.astro';
+import Footer from '@components/Footer.astro';
+import { ClientRouter } from "astro:transitions";
 
 const pageTitle = `${siteConfig.title} - ${siteConfig.subTitle}`;
 const backgroundImageEnabled = siteConfig.backgroundImage.enabled;
@@ -16,12 +19,14 @@ const backgroundImageUrl = url(siteConfig.backgroundImage.url);
     <link rel="icon" href={url(siteConfig.favicon)} type="image/x-icon">
     <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Delius+Swash+Caps"> -->
     <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Delius"> -->
-     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Comic+Neue">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Comic+Neue">
     <title>{pageTitle}</title>
     
 </head>
 <body style={backgroundImageEnabled ? `background-image: url(${backgroundImageUrl})` : ''}>
+    <ThemeIcon />
     <slot />
+    <Footer />
 </body>
 
 </html>
@@ -36,13 +41,13 @@ const backgroundImageUrl = url(siteConfig.backgroundImage.url);
   font-display: swap;
 }
 
-@font-face {
+/* @font-face {
   font-family: 'Comic Sans MS';
-  src: url('/fonts/ComicSansMS-Blod.woff2') format('woff2');
-  font-weight: 700;
+  src: url('/fonts/ComicSansMS-Bold.woff2') format('woff2');
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
-}
+} */
 /* 默认主体，白天模式 */
 :root {
     --bg-color: #f7f7ff;

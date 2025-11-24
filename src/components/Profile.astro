@@ -15,14 +15,20 @@ import img from "../assets/Motues.jpg"
         <ImageModule src={profileConfig.avatar} alt="avator" class="image"/>
     </div>
     <div class="text"> 
-        <div class="name">Motues</div>
+        <div class="name">{config.name}</div>
         <div class="discription">{config.description}</div>
     </div>
     
     <div class="links">
         {config.links.map(item => (
             <div class="link">
-                <a href={item.url} target="_blank" rel="noreferrer" data-title={item.name}>
+                <a 
+                  href={item.url} 
+                  {...item.url.startsWith('/') 
+                    ? {} 
+                    : { target: "_blank", rel: "noreferrer" }} 
+                  data-title={item.name}
+                >
                     <Icon name={item.icon} size={25} style={`color: ${item.color}`}/>
                 </a>
             </div>

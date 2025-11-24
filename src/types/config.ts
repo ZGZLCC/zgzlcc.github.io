@@ -22,3 +22,11 @@ export type ProfileConfig = {
         color: string;
     }[];
 }
+
+export type LabConfig = {
+    name: string;
+    description: string;
+    url: string;
+    icon: string;
+    color: string;
+}[]

@@ -1,6 +1,7 @@
 import type {
     SiteConfig,
-    ProfileConfig
+    ProfileConfig,
+    LabConfig
 } from "./types/config"
 
 export const siteConfig: SiteConfig = {
@@ -39,8 +40,8 @@ export const profileConfig: ProfileConfig = {
             color: "#b4a992",
         },
         {
-            name: "Server",
-            url: "https://server.motues.top",
+            name: "Lab",
+            url: "/lab",
             icon: "fa6-solid:server",
             color: "#72b6b3",
         },
@@ -56,12 +57,6 @@ export const profileConfig: ProfileConfig = {
             icon: "simple-icons:neteasecloudmusic",
             color: "#ff2822",
         },
-        // {
-        //     name: "QQ",
-        //     url: "https://res.abeim.cn/api/qq/?qq=2901987386",
-        //     icon: "fa6-brands:qq",
-        //     color: "#10a2d7ff",
-        // },
         {
             name: "Mail",
             url: "mailto:me@motues.top",
@@ -70,3 +65,20 @@ export const profileConfig: ProfileConfig = {
         },
     ]
 }
+
+export const labConfig : LabConfig = [
+    {
+        name: "BlockBoard",
+        description: "A real-time online block board",
+        url: "https://blockboard.motues.top",
+        icon: "svg-spinners:blocks-wave", // Visit https://icones.js.org/ for icon codes
+        color: "#9fa1a1ff"
+    },
+    {
+        name: "Server",
+        description: "A server monitor",
+        url: "https://server.motues.top",
+        icon: "svg-spinners:bars-scale",
+        color: "#50b8e9ff"
+    },
+]

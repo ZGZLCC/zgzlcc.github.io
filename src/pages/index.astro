@@ -1,8 +1,6 @@
 ---
 import Layout from '@layouts/Layout.astro';
 import Profile from '@components/Profile.astro';
-import Footer from '@components/Footer.astro';
-import ThemeIcon from '@components/control/ThemeIcon.astro';
 
 const mottos = [
   "生活不止眼前的苟且，还有诗和远方。",
@@ -15,13 +13,7 @@ const mottos = [
 ---
 
 <Layout title="欢迎来到我的个人空间">
-  <ThemeIcon />
-  <div slot="footer">
-    <Footer />
-  </div>
-
   <div class="bottom-section">
     <Profile />
-    <Footer />
   </div>
 </Layout>
