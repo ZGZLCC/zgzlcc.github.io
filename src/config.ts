@@ -22,16 +22,21 @@ export const profileConfig: ProfileConfig = {
     description: "Like River!",
     introPage: "https://motues.top",
     links: [
+        /* -------------------------------- Icon -------------------------------- */
         // Visit https://icones.js.org/ for icon codes
         // You will need to install the corresponding icon set if it's not already included
         // `pnpm add @iconify-json/<icon-set-name>`
         // Then add icon to defineConfig.integrationsin.icon in astro.config.mjs
+        // You can also use local svg icons end with .svg, relative to the src directory
+        // eg. `icon: "assets/icons/github.svg"`
+        /* -------------------------------- Color -------------------------------- */
         // The colors a best to be clearly visible in both light and dark environments 
+        // If color is not set, it will use the icon's default color
         {
           name: "Blog",
           url: "https://blog.motues.top",
-          icon: "fa6-solid:tree",
-          color: "#0dbc79", // You can find more colors here: https://zhongguose.com/
+          icon: "fa6-solid:tree", 
+          color: "#0dbc79",
         },
         {
             name: "Note",
@@ -67,11 +72,12 @@ export const profileConfig: ProfileConfig = {
 }
 
 export const labConfig : LabConfig = [
+    // Icon and color rules are same as profileConfig
     {
         name: "BlockBoard",
         description: "A real-time online block board",
         url: "https://blockboard.motues.top",
-        icon: "svg-spinners:blocks-wave", // Visit https://icones.js.org/ for icon codes
+        icon: "svg-spinners:blocks-wave", 
         color: "#9fa1a1ff"
     },
     {
@@ -85,7 +91,6 @@ export const labConfig : LabConfig = [
         name: "OpenList",
         description: "A storage service",
         url: "https://openlist.motues.top",
-        icon: "fa6-solid:floppy-disk",
-        color: "#82d6c5ff"
+        icon: "assets/icons/openlist.svg",
     }
 ]

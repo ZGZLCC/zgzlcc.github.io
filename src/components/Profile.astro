@@ -1,9 +1,9 @@
 ---
 import path from 'path'
-import { Icon } from "astro-icon/components";
 import { profileConfig } from "../config";
 import { Image } from 'astro:assets';
 import ImageModule from "./misc/ImageModule.astro"
+import IconModule from './misc/IconModule.astro'
 
 const config = profileConfig;
 
@@ -29,7 +29,7 @@ import img from "../assets/Motues.jpg"
                     : { target: "_blank", rel: "noreferrer" }} 
                   data-title={item.name}
                 >
-                    <Icon name={item.icon} size={25} style={`color: ${item.color}`}/>
+                    <IconModule icon={item.icon} size={25} color={item.color}/>
                 </a>
             </div>
         ))}

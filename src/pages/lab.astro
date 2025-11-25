@@ -1,15 +1,15 @@
 ---
 import Layout from '@layouts/Layout.astro';
 import { labConfig } from '@/config';
-import { Icon } from 'astro-icon/components';
 import  HomeIcon  from '@components/control/HomeIcon.astro'
+import IconModule from '@components/misc/IconModule.astro'
 
 interface Project {
   name: string;
   description: string;
   url: string;
   icon: string;
-  color: string;
+  color?: string;
 }
 ---
 
@@ -27,7 +27,7 @@ interface Project {
           class="project-card"
         >
           <div class="project-icon">
-            <Icon name={project.icon} size={32} style={`color: ${project.color}`} />
+            <IconModule icon={project.icon} size={32} color={project.color} />
           </div>
           <div class="project-info">
             <h3>{project.name}</h3>

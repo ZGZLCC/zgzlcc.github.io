@@ -19,7 +19,7 @@ export type ProfileConfig = {
         name: string;
         url: string;
         icon: string;
-        color: string;
+        color?: string;
     }[];
 }
 
@@ -28,5 +28,5 @@ export type LabConfig = {
     description: string;
     url: string;
     icon: string;
-    color: string;
+    color?: string;
 }[]
