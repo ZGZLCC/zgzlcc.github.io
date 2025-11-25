@@ -81,4 +81,11 @@ export const labConfig : LabConfig = [
         icon: "svg-spinners:bars-scale",
         color: "#50b8e9ff"
     },
+    {
+        name: "OpenList",
+        description: "A storage service",
+        url: "https://openlist.motues.top",
+        icon: "fa6-solid:floppy-disk",
+        color: "#82d6c5ff"
+    }
 ]
