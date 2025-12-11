@@ -59,35 +59,41 @@ import { Icon } from "astro-icon/components";
 </style>
 
 <script is:inline>
-const htmlRoot = document.querySelector('html');
-const themeToggle = document.getElementById('themeToggle');
+function initThemeToggle() {
+  const htmlRoot = document.querySelector('html');
+  const themeToggle = document.getElementById('themeToggle');
 
-const theme = (() => {
-    const localStorageTheme = localStorage?.getItem("theme") ?? '';
-    if (['dark', 'light'].includes(localStorageTheme)) {
-        return localStorageTheme;
-    }
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return 'dark';
-    }
-    return 'light';
-})();
+  const theme = (() => {
+      const localStorageTheme = localStorage?.getItem("theme") ?? '';
+      if (['dark', 'light'].includes(localStorageTheme)) {
+          return localStorageTheme;
+      }
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          return 'dark';
+      }
+      return 'light';
+  })();
 
-const setTheme = (themeSet) => { 
-    if (themeSet === 'dark') {
-        htmlRoot.setAttribute('data-theme', 'dark');
-    } else {
-        htmlRoot.removeAttribute('data-theme');
-    }
-    window.localStorage.setItem('theme', themeSet);
-};
-setTheme(theme);
+  const setTheme = (themeSet) => { 
+      if (themeSet === 'dark') {
+          htmlRoot.setAttribute('data-theme', 'dark');
+      } else {
+          htmlRoot.removeAttribute('data-theme');
+      }
+      window.localStorage.setItem('theme', themeSet);
+  };
+  setTheme(theme);
 
-const handleToggleClick = () => {
-    const currentTheme = htmlRoot.getAttribute('data-theme');
-    const isDark = currentTheme === 'dark';
-    setTheme(isDark ? 'light' : 'dark');
+  const handleToggleClick = () => {
+      const currentTheme = htmlRoot.getAttribute('data-theme');
+      const isDark = currentTheme === 'dark';
+      setTheme(isDark ? 'light' : 'dark');
+  }
+
+  themeToggle?.addEventListener("click", handleToggleClick);
 }
-
-themeToggle?.addEventListener("click", handleToggleClick);
+// 初次加载
+document.addEventListener('astro:page-load', initThemeToggle);
+// 每次页面切换完成后重新挂载
+document.addEventListener('astro:after-swap', initThemeToggle);
 </script>
