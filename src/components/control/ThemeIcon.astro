@@ -63,6 +63,11 @@ function initThemeToggle() {
   const htmlRoot = document.querySelector('html');
   const themeToggle = document.getElementById('themeToggle');
 
+  // 保存处理函数的引用，以便可以移除它
+  if (window.handleToggleClick) {
+    themeToggle?.removeEventListener("click", window.handleToggleClick);
+  }
+
   const theme = (() => {
       const localStorageTheme = localStorage?.getItem("theme") ?? '';
       if (['dark', 'light'].includes(localStorageTheme)) {
@@ -84,13 +89,14 @@ function initThemeToggle() {
   };
   setTheme(theme);
 
-  const handleToggleClick = () => {
+  // 将处理函数保存到全局作用域，以便可以移除它
+  window.handleToggleClick = () => {
       const currentTheme = htmlRoot.getAttribute('data-theme');
       const isDark = currentTheme === 'dark';
       setTheme(isDark ? 'light' : 'dark');
   }
 
-  themeToggle?.addEventListener("click", handleToggleClick);
+  themeToggle?.addEventListener("click", window.handleToggleClick);
 }
 // 初次加载
 document.addEventListener('astro:page-load', initThemeToggle);
