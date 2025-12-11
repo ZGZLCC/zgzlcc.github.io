@@ -105,7 +105,6 @@ body {
     position: relative;
     height: 100%;
     width: 100%;
-    overflow: hidden;
     transition: background-color 0.5s ease, color 0.5s ease;
 }
 
@@ -128,7 +127,6 @@ body::before {
     
     filter: blur(120px);
     opacity: 0.95;
-    animation: moveGradients 15s infinite alternate ease-in-out;
     transition: opacity 0.5s, background 0.5s;
 }
 
@@ -144,17 +142,3 @@ body::before {
     /* 保持动画和模糊不变，但可以调整不透明度来增强"发光"感 */
     opacity: 0.8;
 }
-
-/* 动画定义 */
-@keyframes moveGradients {
-    0% {
-        transform: scale(1) translate(0, 0);
-    }
-    50% {
-        transform: scale(1.15) translate(80px, -60px);
-    }
-    100% {
-        transform: scale(1.05) translate(-100px, 40px);
-    }
-}
-</style>
