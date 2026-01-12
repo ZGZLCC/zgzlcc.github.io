@@ -5,8 +5,8 @@ import type {
 } from "./types/config"
 
 export const siteConfig: SiteConfig = {
-    title: "Chan",
-    subTitle: "Chen",
+    title: "Chen",
+    subTitle: "Chan",
 
     backgroundImage: {
         enabled: false, // 如果未启用背景图像，则这将用作背景颜色
@@ -20,7 +20,7 @@ export const profileConfig: ProfileConfig = {
     avatar: "assets/zgzlcc.png", // 相对于 /src 目录。如果以 '/' 开头则相对于 /public 目录
     name: "ZGZLCC",
     description: "",
-    introPage: "https://zgzlcc.github.io",
+    introPage: "https://zgzlcc.top",
     links: [
         /* -------------------------------- 图标 -------------------------------- */
         // 访问 https://icones.js.org/ 获取图标代码
@@ -33,41 +33,23 @@ export const profileConfig: ProfileConfig = {
         // 颜色最好在明亮和黑暗环境中都能清晰可见
         // 如果未设置颜色，将使用图标的默认颜色
         {
-          name: "miniprogram",
-          url: "https://zgzlcc.github.io/miniprogram",
+          name: "Miniprogram",
+          url: "https://miniprogram.zgzlcc.top",
           icon: "fa6-solid:heart", 
           color: "#db0f0fff",
         },
-        // {
-        //     name: "Note",
-        //     url: "https://note.motues.top",
-        //     icon: "fa6-solid:book",
-        //     color: "#b4a992",
-        // },
-        // {
-        //     name: "Lab",
-        //     url: "/lab",
-        //     icon: "fa6-solid:server",
-        //     color: "#72b6b3",
-        // },
+        {
+            name: "Blog",
+            url: "https://blog.zgzlcc.top",
+            icon: "fa6-solid:book-open",
+            color: "#79af27",
+        },
         {
             name: "GitHub",
             url: "https://github.com/ZGZLCC",
             icon: "fa6-brands:github",
             color: "#888",
         },
-        // {
-        //     name: "Netease",
-        //     url: "https://music.163.com/#/user/home?id=1601379853",
-        //     icon: "simple-icons:neteasecloudmusic",
-        //     color: "#ff2822",
-        // },
-        // {
-        //     name: "Mail",
-        //     url: "mailto:me@motues.top",
-        //     icon: "fa6-solid:envelope",
-        //     color: "#43a4d1ff"
-        // },
     ]
 }
 
