@@ -5,8 +5,8 @@ import type {
 } from "./types/config"
 
 export const siteConfig: SiteConfig = {
-    title: "Motues",
-    subTitle: "记录生活",
+    title: "Chan",
+    subTitle: "Chen",
 
     backgroundImage: {
         enabled: false, // 如果未启用背景图像，则这将用作背景颜色
