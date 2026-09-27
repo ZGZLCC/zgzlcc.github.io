@@ -2,12 +2,12 @@
 title: 日出
 pubDate: '2024-07-24'
 description: ''
-image: ''
+image: ./IMG_1417-topaz-denoise-2.webp
 draft: false
 slugId: '2024-07-24'
 pinTop: 0
 ---
-# 岳麓山的日出
+# 岳麓山日出
 
 不枉那么早起床！
 
