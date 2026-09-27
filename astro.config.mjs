@@ -1,4 +1,5 @@
 // @ts-check
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import { unified } from '@astrojs/markdown-remark';
 import tailwindcss from "@tailwindcss/vite";
@@ -80,7 +81,8 @@ export default defineConfig({
         customFigurePlugin,
         [rehypeImageCollage, {
           enable: collageSettings.enable !== false,
-          maxColumns: collageSettings.maxColumns ?? 4
+          maxColumns: collageSettings.maxColumns ?? 4,
+          publicDir: fileURLToPath(new URL('./public/', import.meta.url))
         }],
         [
           rehypeComponents,

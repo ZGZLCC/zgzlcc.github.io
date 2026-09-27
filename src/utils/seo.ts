@@ -11,7 +11,7 @@ import { profileConfig, siteConfig } from '@/config'
 /** 内容目录里的图片：构建期取出优化后的 URL 作为分享图 */
 const contentImages = import.meta.glob<ImageMetadata>(
     '/src/content/blog/**/*.{png,jpg,jpeg,webp,avif,gif}',
-    { import: 'default', eager: true },
+    { import: 'default', eager: true, caseSensitive: false },
 )
 
 /** 站内路径 -> 绝对 URL（已带 base 的路径不会重复拼接） */

@@ -41,9 +41,9 @@ if (isLocal) {
   // 结果任何用到 ImageModule 的页面（例如首页）都会被拖上几百 KB 的正文样式。
   const images = import.meta.glob<ImageMetadata>(
     "../../**/*.{jpg,jpeg,jfif,png,apng,webp,avif,gif,svg,tiff,tif,bmp,ico,heic}",
-    { import: "default" }
+    { import: "default", caseSensitive: false }
   );
-  let imagePath = path.normalize(path.join("../../", "/", src)).replace(/\\/g, "/");
+  const imagePath = path.normalize(path.join("../../", "/", src)).replace(/\\/g, "/");
   const imageGetter = images[imagePath];
 
   if (!imageGetter) {

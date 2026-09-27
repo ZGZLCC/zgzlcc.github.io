@@ -29,7 +29,7 @@ import { GithubCardComponent } from '../../src/plugins/rehype-component-github-c
 import { MusicCardComponent } from '../../src/plugins/rehype-component-music-card.mjs'
 import { QuoteComponent } from '../../src/plugins/rehype-component-quote.mjs'
 import ecConfig, { ecThemeOptions } from '../../ec.config.mjs'
-import { normalizeData } from './store.mjs'
+import { normalizeData, BLOG_DIR } from './store.mjs'
 import { CONFIG_PATH, readConfig } from './config-file.mjs'
 
 // ---------- 代码高亮：Expressive Code（官方实现，与博客共用根目录 ec.config.mjs） ----------
@@ -118,6 +118,7 @@ katexFonts.get('/*', async (c) => {
 
 // ---------- 正文样式（与博客 markdown.css 一致的精简版） ----------
 const proseCss = await readFile(join(dirname(fileURLToPath(import.meta.url)), 'prose.css'), 'utf-8')
+const PUBLIC_DIR = fileURLToPath(new URL('../../public/', import.meta.url))
 
 // ---------- 主管线：remark 阶段（与 astro.config.mjs 顺序一致） ----------
 // unified 的 processor 一旦 process 就会被冻结，因此每个请求都新建
@@ -136,7 +137,11 @@ function createProcessor(base, locale, ec, collage) {
     .use(rehypeKatex)
     .use(customFigurePlugin)
     // 连续放置的多张图片自动拼图（与博客使用同一插件与同一份配置）
-    .use(rehypeImageCollage, collage)
+    .use(rehypeImageCollage, {
+      ...collage,
+      baseDir: base ? join(BLOG_DIR, ...base.split('/')) : BLOG_DIR,
+      publicDir: PUBLIC_DIR,
+    })
     .use(rehypeComponents, {
       components: {
         github: GithubCardComponent,
