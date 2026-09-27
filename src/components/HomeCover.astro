@@ -77,22 +77,24 @@ const { title, subTitle, photos } = Astro.props;
     transform: translate(-50%, -50%);
     color: color-mix(in srgb, white var(--home-photo-ink, 100%), var(--text-color));
     text-shadow: 0 2px 22px #0009;
+    visibility: hidden;
   }
+  .home-cover.photo-ready .home-copy { visibility: visible; }
   .home-copy h1 {
     margin: 0;
     font-size: var(--home-title-size, clamp(3.25rem, 8vw, 6rem));
     font-weight: 700;
     line-height: 1.18;
     letter-spacing: -.025em;
-    animation: home-rise 1.5s cubic-bezier(.2,.7,.2,1) both;
   }
   .home-copy p {
     margin: .65em 0 0;
     font-size: var(--home-subtitle-size, clamp(1.25rem, 3vw, 1.8rem));
     font-weight: 700;
     line-height: 1.5;
-    animation: home-rise 1.5s .12s cubic-bezier(.2,.7,.2,1) both;
   }
+  .home-cover.photo-ready .home-copy h1 { animation: home-rise 1.5s .15s cubic-bezier(.2,.7,.2,1) both; }
+  .home-cover.photo-ready .home-copy p { animation: home-rise 1.5s .27s cubic-bezier(.2,.7,.2,1) both; }
   @keyframes home-rise {
     from { opacity: 0; translate: 0 18px; }
     to { opacity: 1; translate: 0 0; }
@@ -127,7 +129,7 @@ const { title, subTitle, photos } = Astro.props;
     body.home-photo-active #main-header { background-color: #0003; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .home-copy h1, .home-copy p { animation: none; }
+    .home-cover.photo-ready .home-copy h1, .home-cover.photo-ready .home-copy p { animation: none; }
     .home-arrow { transition: none; }
   }
 </style>
@@ -142,8 +144,16 @@ const { title, subTitle, photos } = Astro.props;
 
     const photos = JSON.parse(hero.dataset.photos || '[]') as string[];
     const photo = photos[Math.floor(Math.random() * photos.length)];
-    if (!photo) return;
-    hero.querySelectorAll<HTMLImageElement>('.home-media img').forEach((img) => { img.src = photo; });
+    const mainPhoto = hero.querySelector<HTMLImageElement>('.home-photo')!;
+    const revealCopy = () => requestAnimationFrame(() => {
+      if (hero.isConnected) hero.classList.add('photo-ready');
+    });
+    if (photo) {
+      mainPhoto.addEventListener('load', revealCopy, { once: true });
+      mainPhoto.addEventListener('error', revealCopy, { once: true });
+      hero.querySelector<HTMLImageElement>('.home-photo-blur')!.src = photo;
+      mainPhoto.src = photo;
+    } else revealCopy();
 
     const media = hero.querySelector<HTMLElement>('.home-media')!;
     const copy = hero.querySelector<HTMLElement>('.home-copy')!;
