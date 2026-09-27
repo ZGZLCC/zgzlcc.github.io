@@ -65,7 +65,7 @@ export const i18nConfig: I18nConfig = {
         "zh-cn": {
             Cover: {
                 title: {
-                    home: "LCC的相册",
+                    home: "追光者的相册",
                     archive: "相册归档",
                     about: "关于",
                     friends: "友链",
