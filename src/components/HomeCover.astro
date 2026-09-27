@@ -1,0 +1,204 @@
+---
+interface Props {
+  title: string;
+  subTitle: string;
+  photos: string[];
+}
+
+const { title, subTitle, photos } = Astro.props;
+---
+
+<section id="home-cover" class="home-cover" data-photos={JSON.stringify(photos)} aria-label={title}>
+  <div class="home-media" aria-hidden="true">
+    <img class="home-photo-blur" alt="" />
+    <img class="home-photo" alt="" fetchpriority="high" />
+  </div>
+  <div class="home-copy">
+    <h1>{title}</h1>
+    <p>{subTitle}</p>
+  </div>
+  <a class="home-arrow" href="#home-posts" aria-label="向下查看相册">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+      <path d="m5 9 7 7 7-7" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+  </a>
+</section>
+
+<style is:global>
+  .home-cover {
+    --home-header-height: 0px;
+    position: relative;
+    height: calc(100svh - var(--home-header-height));
+    isolation: isolate;
+  }
+  @media (min-width: 776px) {
+    .home-cover { --home-header-height: 84px; }
+  }
+  .home-media {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    background: #252529;
+  }
+  .home-media img {
+    display: block;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    max-width: none;
+  }
+  .home-photo-blur {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: translate(-50%, -50%) scale(1.1);
+    filter: blur(38px);
+  }
+  .home-photo {
+    width: 100%;
+    height: auto;
+    transform: translate(-50%, -50%);
+  }
+  .home-media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, #0008, #0001 28%, #0005 62%, #0006);
+  }
+  .home-copy {
+    position: absolute;
+    left: 50%;
+    top: var(--home-copy-top, 50%);
+    z-index: 1;
+    width: min(90vw, 776px);
+    text-align: center;
+    transform: translate(-50%, -50%);
+    color: color-mix(in srgb, white var(--home-photo-ink, 100%), var(--text-color));
+    text-shadow: 0 2px 22px #0009;
+  }
+  .home-copy h1 {
+    margin: 0;
+    font-size: var(--home-title-size, clamp(3.25rem, 8vw, 6rem));
+    font-weight: 700;
+    line-height: 1.18;
+    letter-spacing: -.025em;
+    animation: home-rise 1.5s cubic-bezier(.2,.7,.2,1) both;
+  }
+  .home-copy p {
+    margin: .65em 0 0;
+    font-size: var(--home-subtitle-size, clamp(1.25rem, 3vw, 1.8rem));
+    font-weight: 700;
+    line-height: 1.5;
+    animation: home-rise 1.5s .12s cubic-bezier(.2,.7,.2,1) both;
+  }
+  @keyframes home-rise {
+    from { opacity: 0; translate: 0 18px; }
+    to { opacity: 1; translate: 0 0; }
+  }
+  .home-arrow {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(22px, 5svh, 44px);
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border: 1px solid #fffa;
+    border-radius: 50%;
+    color: white;
+    background: #0003;
+    transform: translateX(-50%);
+    transition: background .2s;
+  }
+  .home-arrow:hover { background: #0007; }
+  .home-arrow:focus-visible { outline: 2px solid white; outline-offset: 4px; }
+  .home-arrow svg { width: 21px; height: 21px; }
+  body.home-with-photo #main-header > div,
+  body.home-with-photo #nav-bar {
+    color: color-mix(in srgb, white var(--home-photo-ink, 100%), var(--text-color));
+  }
+  body.home-photo-active #nav-bar { color: white; }
+  body.home-photo-active #nav-bar-list { background-color: #0007; border-color: #fff6; }
+  body.home-photo-active #nav-bar a:first-child { color: var(--text-color); }
+  @media (max-width: 775px) {
+    body.home-photo-active #main-header { background-color: #0003; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .home-copy h1, .home-copy p { animation: none; }
+    .home-arrow { transition: none; }
+  }
+</style>
+
+<script>
+  let cleanupHome = () => {};
+
+  document.addEventListener('astro:page-load', () => {
+    cleanupHome();
+    const hero = document.querySelector<HTMLElement>('#home-cover');
+    if (!hero) return;
+
+    const photos = JSON.parse(hero.dataset.photos || '[]') as string[];
+    const photo = photos[Math.floor(Math.random() * photos.length)];
+    if (!photo) return;
+    hero.querySelectorAll<HTMLImageElement>('.home-media img').forEach((img) => { img.src = photo; });
+
+    const media = hero.querySelector<HTMLElement>('.home-media')!;
+    const copy = hero.querySelector<HTMLElement>('.home-copy')!;
+    const arrow = hero.querySelector<HTMLAnchorElement>('.home-arrow')!;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const body = document.body;
+    body.classList.add('home-with-photo');
+    let travel = 1;
+    let heroTop = 0;
+    let headerHeight = 0;
+    let ticking = false;
+
+    const update = () => {
+      const raw = Math.min(1, Math.max(0, window.scrollY / travel));
+      const progress = reduced.matches && raw > 0 ? 1 : raw;
+      const eased = progress * progress * (3 - 2 * progress);
+      const ink = `${Math.round((1 - eased) * 100)}%`;
+      const titleOpen = Math.min(96, Math.max(52, window.innerWidth * .085));
+      const subtitleOpen = Math.min(29, Math.max(20, window.innerWidth * .03));
+
+      media.style.opacity = String(1 - eased);
+      copy.style.setProperty('--home-copy-top', `${hero.offsetHeight / 2 + progress * (travel + headerHeight + 70 - heroTop - hero.offsetHeight / 2)}px`);
+      copy.style.setProperty('--home-title-size', `${titleOpen + (30 - titleOpen) * eased}px`);
+      copy.style.setProperty('--home-subtitle-size', `${subtitleOpen + (16 - subtitleOpen) * eased}px`);
+      copy.style.setProperty('--home-photo-ink', ink);
+      body.style.setProperty('--home-photo-ink', ink);
+      body.classList.toggle('home-photo-active', progress < 1);
+      arrow.style.opacity = String(Math.max(0, 1 - progress * 2));
+      arrow.style.pointerEvents = progress >= .5 ? 'none' : '';
+    };
+    const measure = () => {
+      headerHeight = document.getElementById('main-header')?.getBoundingClientRect().height || 0;
+      hero.style.setProperty('--home-header-height', `${window.innerWidth >= 776 ? headerHeight : 0}px`);
+      heroTop = hero.getBoundingClientRect().top + window.scrollY;
+      travel = Math.max(1, hero.offsetHeight * .72);
+      update();
+    };
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => { ticking = false; update(); });
+    };
+    arrow.onclick = (event) => {
+      event.preventDefault();
+      window.scrollTo({ top: travel, behavior: reduced.matches ? 'auto' : 'smooth' });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', measure);
+    measure();
+
+    cleanupHome = () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', measure);
+      body.classList.remove('home-with-photo', 'home-photo-active');
+      body.style.removeProperty('--home-photo-ink');
+    };
+  });
+</script>
