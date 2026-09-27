@@ -7,30 +7,23 @@ draft: false
 slugId: 24-06-09
 pinTop: 0
 ---
+# 堂哥结婚小记
+端午假期，回老家参加婚礼。
+## 两人发表感想
 ![IMG_0363](./IMG_0363.webp)
-
 ![IMG_0365](./IMG_0365.webp)
-
 ![IMG_0366](./IMG_0366.webp)
-
 ![IMG_0373](./IMG_0373.webp)
-
 ![IMG_0379](./IMG_0379.webp)
-
 ![IMG_0384](./IMG_0384.webp)
-
 ![IMG_0391](./IMG_0391.webp)
-
+## 戴戒指啦
 ![IMG_0400](./IMG_0400.webp)
-
 ![IMG_0406](./IMG_0406.webp)
-
 ![IMG_0417](./IMG_0417.webp)
-
 ![IMG_0418](./IMG_0418.webp)
-
+## 家长们压不住的嘴角
 ![IMG_0443](./IMG_0443.webp)
-
 ![IMG_0449](./IMG_0449.webp)
-
+## 附一张小屁孩
 ![IMG_0371](./IMG_0371.webp)
