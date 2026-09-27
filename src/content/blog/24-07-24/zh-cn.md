@@ -4,7 +4,7 @@ pubDate: '2024-07-24'
 description: ''
 image: ./IMG_1417-topaz-denoise-2.webp
 draft: false
-slugId: '2024-07-24'
+slugId: 24-07-24
 pinTop: 0
 ---
 # 岳麓山日出
