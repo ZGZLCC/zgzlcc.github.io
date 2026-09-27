@@ -282,6 +282,7 @@
   height: 100%;
   margin: 0;
 }
+.markdown-content .image-collage figcaption { display: none; }
 
 /* 兜底：行内有图片量不出宽高比（远端图片等）时，用固定行高裁切铺满格子，保证行内整齐 */
 .markdown-content .image-collage .collage-media {
@@ -315,28 +316,35 @@
 
 @media (max-width: 776px) {
   .markdown-content .image-collage {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: block;
   }
 
   .markdown-content .image-collage .collage-item {
-    grid-column: auto;
+    margin: 1rem 0;
   }
 
-  /* 移动端每行最多 2 张，总数为奇数时最后一张补满整行 */
-  .markdown-content .image-collage .collage-item:last-child:nth-child(odd) {
-    grid-column: span 2;
+  .markdown-content .image-collage figure { height: auto; }
+  .markdown-content .image-collage figcaption {
+    display: block;
+    text-align: center;
   }
 
-  /* 桌面端算出的行高在 2 列布局下不适用，退回固定行高；改用插件为移动端算出的 .collage-ratio-sm */
+  .markdown-content .image-collage .collage-media,
   .markdown-content .image-collage .collage-media.collage-ratio {
-    height: var(--collage-row-height);
-    aspect-ratio: auto;
-  }
-
-  .markdown-content .image-collage .collage-media.collage-ratio-sm {
     height: auto;
-    aspect-ratio: var(--ratio-sm);
+    aspect-ratio: auto;
+    overflow: visible;
+    background: none;
   }
+  .markdown-content .image-collage .collage-media img {
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    margin: 1rem auto;
+    border-radius: 6px;
+    object-fit: contain;
+  }
+  .markdown-content .image-collage .collage-item:hover .collage-media img { transform: none; }
 }
 
 .markdown-content hr {

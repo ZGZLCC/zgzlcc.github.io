@@ -3,12 +3,13 @@ interface Props {
   title: string;
   subTitle: string;
   photos: string[];
+  mobilePhotos: string[];
 }
 
-const { title, subTitle, photos } = Astro.props;
+const { title, subTitle, photos, mobilePhotos } = Astro.props;
 ---
 
-<section id="home-cover" class="home-cover" data-photos={JSON.stringify(photos)} aria-label={title}>
+<section id="home-cover" class="home-cover" data-photos={JSON.stringify(photos)} data-mobile-photos={JSON.stringify(mobilePhotos)} aria-label={title}>
   <div class="home-media" aria-hidden="true">
     <img class="home-photo-blur" alt="" />
     <img class="home-photo" alt="" fetchpriority="high" />
@@ -60,6 +61,9 @@ const { title, subTitle, photos } = Astro.props;
     width: 100%;
     height: auto;
     transform: translate(-50%, -50%);
+  }
+  @media (max-width: 775px) {
+    .home-photo { width: auto; height: 100%; }
   }
   .home-media::after {
     content: '';
@@ -135,6 +139,7 @@ const { title, subTitle, photos } = Astro.props;
 </style>
 
 <script>
+  import { pickHomePhoto } from '../utils/homePhoto';
   let cleanupHome = () => {};
 
   document.addEventListener('astro:page-load', () => {
@@ -142,8 +147,14 @@ const { title, subTitle, photos } = Astro.props;
     const hero = document.querySelector<HTMLElement>('#home-cover');
     if (!hero) return;
 
-    const photos = JSON.parse(hero.dataset.photos || '[]') as string[];
-    const photo = photos[Math.floor(Math.random() * photos.length)];
+    const desktopPhotos = JSON.parse(hero.dataset.photos || '[]') as string[];
+    const mobilePhotos = JSON.parse(hero.dataset.mobilePhotos || '[]') as string[];
+    let previous = '';
+    try { previous = localStorage.getItem('momo:last-home-photo') || ''; } catch { /* storage may be disabled */ }
+    const photo = pickHomePhoto(desktopPhotos, mobilePhotos, window.matchMedia('(max-width: 775px)').matches, previous);
+    if (photo) {
+      try { localStorage.setItem('momo:last-home-photo', photo); } catch { /* storage may be disabled */ }
+    }
     const mainPhoto = hero.querySelector<HTMLImageElement>('.home-photo')!;
     const revealCopy = () => requestAnimationFrame(() => {
       if (hero.isConnected) hero.classList.add('photo-ready');

@@ -19,6 +19,7 @@ export const siteConfig: SiteConfig = {
     "/home/IMG_3335.webp",
     "/home/IMG_3430.webp",
     "/home/IMG_3519.webp", "/home/IMG_5661.webp", "/home/IMG_6121.webp", "/home/IMG_3130.webp", "/home/IMG_8518.webp", "/home/IMG_8736.webp", "/home/IMG_8937.webp", "/home/IMG_2371.webp"], // 首页背景照片；在 CMS 中导入并保存后，每次进入首页随机展示一张
+    homePhotosMobile: [], // 移动端首页背景照片；留空时沿用首页照片
     toc: {
         enable: true,
         depth: 3 // Max depth of the table of contents, between 1 and 4
@@ -32,7 +33,7 @@ export const siteConfig: SiteConfig = {
         PhotoSwipe: true, // Whether to enable PhotoSwipe for image viewer
         imageCollage: {
             enable: true, // Whether to automatically arrange consecutive images into a grid (collage)
-            maxColumns: 3 // Max images per row in a collage (2 - 6); the actual number is chosen automatically
+            maxColumns: 2 // Max images per row in a collage (2 - 6); the actual number is chosen automatically
         },
         postCard: {
             imageMode: "top" // Cover image mode for article cards: "top" shows the image above the content; "background" uses the image as the card background, fading to transparent from right to left

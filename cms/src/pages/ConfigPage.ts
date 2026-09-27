@@ -29,7 +29,7 @@ interface SectionDef {
   title: string
   desc?: string
   fields?: FieldDef[]
-  kind?: 'friendLinks' | 'homePhotos'
+  kind?: 'friendLinks' | 'homePhotos' | 'homePhotosMobile'
 }
 
 interface ConfigState {
@@ -66,8 +66,14 @@ function buildSections(): SectionDef[] {
     {
       id: 'home-photos',
       title: '首页照片',
-      desc: '首页首次打开时随机选取一张；站内翻页保持原有封面。导入后需保存配置并重新构建博客。',
+      desc: '桌面端首页随机选择；站内翻页保持原有封面。导入后需保存配置并重新构建博客。',
       kind: 'homePhotos',
+    },
+    {
+      id: 'home-photos-mobile',
+      title: '移动端首页照片',
+      desc: '手机端随机选择；留空时使用上方的首页照片。照片按屏幕高度显示，左右不足时用虚化背景填充。导入后需保存配置并重新构建博客。',
+      kind: 'homePhotosMobile',
     },
     {
       id: 'page',
@@ -89,7 +95,7 @@ function buildSections(): SectionDef[] {
           path: ['siteConfig', 'theme', 'imageCollage', 'enable'],
           label: '连续图片自动拼图 imageCollage',
           type: 'bool',
-          hint: '正文里连续放置的多张图片自动排成网格（不显示图注；每行高度由该行最宽的图片决定并让它完整显示，其余按这个高度裁切）（需重新构建博客）',
+          hint: '桌面端正文里连续放置的多张图片自动排成网格；移动端逐张显示原图（需重新构建博客）',
         },
         {
           path: ['siteConfig', 'theme', 'imageCollage', 'maxColumns'],
@@ -269,8 +275,8 @@ function renderSection(
   const body =
     section.kind === 'friendLinks'
       ? renderFriendLinks(state, main, badge)
-      : section.kind === 'homePhotos'
-      ? renderHomePhotos(state, main, badge)
+      : section.kind === 'homePhotos' || section.kind === 'homePhotosMobile'
+      ? renderHomePhotos(state, main, badge, section.kind)
       : el(
           'div',
           { class: 'cfg-grid' },
@@ -286,8 +292,8 @@ function renderSection(
   ])
 }
 
-function renderHomePhotos(state: ConfigState, main: HTMLElement, badge: HTMLElement): HTMLElement {
-  const photos = state.values.siteConfig.homePhotos as string[]
+function renderHomePhotos(state: ConfigState, main: HTMLElement, badge: HTMLElement, kind: 'homePhotos' | 'homePhotosMobile'): HTMLElement {
+  const photos = state.values.siteConfig[kind] as string[]
   const uploadButton = el('button', { class: 'btn', type: 'button' }, ['＋ 导入照片'])
   uploadButton.onclick = () => {
     const input = el('input', {
@@ -335,7 +341,7 @@ function renderHomePhotos(state: ConfigState, main: HTMLElement, badge: HTMLElem
             el('img', { src: `/api/upload/home/${encodeURIComponent(name)}`, alt: name, loading: 'lazy' }),
             el('div', { class: 'cfg-photo-caption' }, [
               el('span', { title: name }, [name]),
-              el('button', { class: 'row-act row-act-danger', type: 'button', title: '从首页随机照片中移除', onclick: () => {
+              el('button', { class: 'row-act row-act-danger', type: 'button', title: '从随机照片中移除', onclick: () => {
                 photos.splice(index, 1)
                 markDirty(state, badge)
                 renderBody(main, state, badge)
@@ -343,7 +349,7 @@ function renderHomePhotos(state: ConfigState, main: HTMLElement, badge: HTMLElem
             ]),
           ])
         }))
-      : el('div', { class: 'panel-empty' }, ['还没有首页照片，导入后首页会随机展示其中一张。']),
+      : el('div', { class: 'panel-empty' }, [kind === 'homePhotosMobile' ? '尚未设置移动端照片，将使用上方的首页照片。' : '还没有首页照片，导入后首页会随机展示其中一张。']),
     uploadButton,
     el('p', { class: 'cfg-hint' }, ['支持 JPG、PNG、WebP、AVIF、HEIC；仅等比例缩小并按拍摄方向显示，不裁切原图。']),
   ])

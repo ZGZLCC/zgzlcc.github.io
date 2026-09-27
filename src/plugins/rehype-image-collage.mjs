@@ -23,14 +23,12 @@
  * </div>
  * ```
  * `--cols` 是每行张数，最后一行的图片用 `--span` 补满整行（例如 5 张、每行 3 张时最后一张跨 2 列）。
- * `.collage-media` 上的 `--ratio` / `--ratio-sm` 分别是桌面端与移动端算出来的宽高比（见下面的高度策略）。
+ * `.collage-media` 上的 `--ratio` 是桌面端算出来的宽高比；移动端逐张显示原图。
  *
  * 高度策略（尽量不裁切图片）——逐行决定行高：
  * - 行高 = 该行「按自身宽高比完整显示所需高度」最小的那张图的高度，也就是这一行最宽
  *   （宽高比最大）的图片的完整高度；它完整显示不裁切，其余图片用 `object-fit: cover`
  *   按这个高度裁切。
- * - 移动端固定每行 2 张（奇数时最后一张跨 2 列），分行与桌面端不同，因此另一份值放在
- *   `.collage-ratio-sm` / `--ratio-sm` 上。
  *
  * 样式见 `src/styles/markdown.css`（CMS 预览见 `cms/server/prose.css`）。
  */
@@ -219,7 +217,7 @@ function rowAspectRatios(rows, ratios, spans) {
 
 /**
  * 把图片节点包进 `.collage-media`（裁切 / hover 缩放用）。
- * `<figure>` 里的 `<figcaption>` 直接丢弃：拼图里不再显示图注文字。
+ * `<figure>` 的图注保留给移动端逐张显示，桌面端由 CSS 隐藏。
  */
 function wrapImage(node, { classes = [], style = null } = {}) {
   const mediaOf = (img) => ({
@@ -232,11 +230,10 @@ function wrapImage(node, { classes = [], style = null } = {}) {
     children: [img],
   })
   if (node.tagName === 'img') return mediaOf(node)
-  // <figure>：只保留 <img>（丢掉图注），并把它包进 .collage-media
+  // <figure>：图片包进 .collage-media，图注留给移动端普通图片布局
   return {
     ...node,
     children: (node.children ?? [])
-      .filter((child) => !(child.type === 'element' && child.tagName === 'figcaption'))
       .map((child) => (child.type === 'element' && child.tagName === 'img' ? mediaOf(child) : child)),
   }
 }
@@ -256,28 +253,13 @@ async function createCollage(images, maxColumns, imageOptions) {
   })
   const ratios = await Promise.all(images.map((image) => imageRatio(imageSrcIn(image), imageOptions)))
 
-  // 桌面端按 --cols 分行；移动端固定每行 2 张（总数为奇数时最后一张跨 2 列），两者分行不同，各算一次
   const desktopRows = splitRows(spans, columns)
-  const mobileSpans = spans.map((_, index) => (count % 2 === 1 && index === count - 1 ? 2 : 1))
-  const mobileRows = splitRows(mobileSpans, 2)
-  // 两套布局各自「按行算高度」：同一个值（图片宽高比一致时）就是原比例完整显示，
-  // 不一致时则取行内最宽图片的高度，其余图片按这个高度裁切
   const desktopAr = rowAspectRatios(desktopRows, ratios, spans)
-  const mobileAr = rowAspectRatios(mobileRows, ratios, mobileSpans)
   const round = (value) => Number(value.toFixed(4))
 
   const children = images.map((image, index) => {
-    const classes = [
-      ...(desktopAr.has(index) ? ['collage-ratio'] : []),
-      ...(mobileAr.has(index) ? ['collage-ratio-sm'] : []),
-    ]
-    // 两套布局的宽高比可能不同（分行不同），所以各存一个变量
-    const style = [
-      desktopAr.has(index) ? `--ratio: ${round(desktopAr.get(index))};` : '',
-      mobileAr.has(index) ? `--ratio-sm: ${round(mobileAr.get(index))};` : '',
-    ]
-      .filter(Boolean)
-      .join(' ')
+    const classes = desktopAr.has(index) ? ['collage-ratio'] : []
+    const style = desktopAr.has(index) ? `--ratio: ${round(desktopAr.get(index))};` : null
     return {
       type: 'element',
       tagName: 'div',
@@ -285,7 +267,7 @@ async function createCollage(images, maxColumns, imageOptions) {
         className: ['collage-item'],
         ...(spans[index] > 1 ? { style: `--span: ${spans[index]};` } : {}),
       },
-      children: [wrapImage(image, { classes, style: style || null })],
+      children: [wrapImage(image, { classes, style })],
     }
   })
 

@@ -70,8 +70,8 @@ const pageTitle = page.currentPage > 1
 ---
 
 <MainPageLayout title={pageTitle} lang={currentLang}>
-    {page.currentPage === 1 && siteConfig.homePhotos.length > 0
-      ? <HomeCover title={t("cover.title.home")} subTitle={t("cover.subTitle.home")} photos={siteConfig.homePhotos} />
+    {page.currentPage === 1 && (siteConfig.homePhotos.length > 0 || siteConfig.homePhotosMobile.length > 0)
+      ? <HomeCover title={t("cover.title.home")} subTitle={t("cover.subTitle.home")} photos={siteConfig.homePhotos} mobilePhotos={siteConfig.homePhotosMobile} />
       : <Cover title={t("cover.title.home")} subTitle={t("cover.subTitle.home")} />}
     <div id="home-posts" class="relative">
       <PostPage page={page} />

@@ -7,6 +7,7 @@ export type SiteConfig = {
 
     pageSize: number;
     homePhotos: string[];
+    homePhotosMobile: string[];
     toc: {
         enable: boolean;
         depth: number;

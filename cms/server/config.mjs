@@ -13,9 +13,9 @@ config.put('/', async (c) => {
   if (!body || typeof body.values !== 'object' || body.values === null) {
     return c.json({ error: '无效请求体，应为 { values }' }, 400)
   }
-  const photos = body.values.siteConfig?.homePhotos
-  if (!Array.isArray(photos) || photos.length > 200 || !photos.every((url) =>
-    typeof url === 'string' && /^\/home\/[\p{L}\p{N}_][\p{L}\p{N}._-]*\.webp$/u.test(url))) {
+  const photoListValid = (photos) => Array.isArray(photos) && photos.length <= 200 && photos.every((url) =>
+    typeof url === 'string' && /^\/home\/[\p{L}\p{N}_][\p{L}\p{N}._-]*\.webp$/u.test(url))
+  if (!photoListValid(body.values.siteConfig?.homePhotos) || !photoListValid(body.values.siteConfig?.homePhotosMobile)) {
     return c.json({ error: '首页照片路径无效' }, 400)
   }
   try {
