@@ -11,6 +11,8 @@ const upload = new Hono()
 const MAX_ORIGINAL_SIZE = 100 * 1024 * 1024
 const WEB_EDGE = 2560
 const HOME_DIR = fileURLToPath(new URL('../../public/home/', import.meta.url))
+const HOME_MOBILE_DIR = fileURLToPath(new URL('../../public/home-mobile/', import.meta.url))
+const HOME_DIRS = new Map([['home', HOME_DIR], ['home-mobile', HOME_MOBILE_DIR]])
 const INPUT_ERRORS = ['单张原图需小于 100 MB', '仅支持单帧 JPG、PNG、WebP、AVIF 或 HEIC 照片', '照片无法处理或格式不受支持']
 
 function uploadError(c, error) {
@@ -86,7 +88,10 @@ upload.post('/', async (c) => {
 })
 
 // 首页照片与相册使用同一套等比例缩放和 EXIF 方向处理。
-upload.post('/home', async (c) => {
+upload.post('/:album', async (c) => {
+  const album = c.req.param('album')
+  const dir = HOME_DIRS.get(album)
+  if (!dir) return c.notFound()
   const form = await c.req.parseBody().catch(() => null)
   const file = form?.file
   if (typeof File === 'undefined' || !(file instanceof File)) {
@@ -94,18 +99,20 @@ upload.post('/home', async (c) => {
   }
   try {
     const output = await preparePhoto(file)
-    await mkdir(HOME_DIR, { recursive: true })
-    return c.json(await savePhoto(file, output, HOME_DIR, '/home/'))
+    await mkdir(dir, { recursive: true })
+    return c.json(await savePhoto(file, output, dir, `/${album}/`))
   } catch (error) {
     return uploadError(c, error)
   }
 })
 
-// CMS 运行在独立的 Vite 根目录，通过此路由预览博客 public/home 中的照片。
-upload.get('/home/:name', async (c) => {
+// CMS 运行在独立的 Vite 根目录，通过此路由预览博客 public 中的首页照片。
+upload.get('/:album/:name', async (c) => {
+  const dir = HOME_DIRS.get(c.req.param('album'))
+  if (!dir) return c.notFound()
   const name = c.req.param('name')
   if (!/^[\p{L}\p{N}_][\p{L}\p{N}._-]*\.webp$/u.test(name)) return c.notFound()
-  const photo = await readFile(join(HOME_DIR, name)).catch(() => null)
+  const photo = await readFile(join(dir, name)).catch(() => null)
   if (!photo) return c.notFound()
   return c.body(photo, 200, { 'Content-Type': 'image/webp', 'Cache-Control': 'no-store' })
 })

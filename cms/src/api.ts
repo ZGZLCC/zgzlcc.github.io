@@ -70,10 +70,10 @@ export const api = {
     return req<{ name: string; url: string }>('/api/upload', { method: 'POST', body: fd })
   },
 
-  uploadHomePhoto(file: File) {
+  uploadHomePhoto(file: File, mobile = false) {
     const fd = new FormData()
     fd.append('file', file)
-    return req<{ name: string; url: string }>('/api/upload/home', { method: 'POST', body: fd })
+    return req<{ name: string; url: string }>(`/api/upload/${mobile ? 'home-mobile' : 'home'}`, { method: 'POST', body: fd })
   },
 
   stats() {

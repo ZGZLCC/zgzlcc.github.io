@@ -19,7 +19,14 @@ export const siteConfig: SiteConfig = {
     "/home/IMG_3335.webp",
     "/home/IMG_3430.webp",
     "/home/IMG_3519.webp", "/home/IMG_5661.webp", "/home/IMG_6121.webp", "/home/IMG_3130.webp", "/home/IMG_8518.webp", "/home/IMG_8736.webp", "/home/IMG_8937.webp", "/home/IMG_2371.webp"], // 首页背景照片；在 CMS 中导入并保存后，每次进入首页随机展示一张
-    homePhotosMobile: [], // 移动端首页背景照片；留空时沿用首页照片
+    homePhotosMobile: ["/home-mobile/IMG_2251.webp", "/home-mobile/IMG_2371.webp", "/home-mobile/IMG_2541.webp", "/home-mobile/IMG_2689.webp", "/home-mobile/IMG_1498.webp", "/home-mobile/IMG_1709.webp", "/home-mobile/IMG_1867.webp",
+    "/home-mobile/IMG_3734.webp",
+    "/home-mobile/IMG_3168.webp",
+    "/home-mobile/IMG_3335.webp",
+    "/home-mobile/IMG_7561.webp", "/home-mobile/IMG_6121.webp",
+    "/home-mobile/IMG_1229.webp",
+    "/home-mobile/IMG_1175.webp",
+    "/home-mobile/IMG_1576.webp", "/home-mobile/IMG_1639.webp", "/home-mobile/IMG_1827.webp", "/home-mobile/IMG_2131.webp", "/home-mobile/IMG_9325.webp"], // 移动端首页背景照片，存于 public/home-mobile/；留空时沿用首页照片
     toc: {
         enable: true,
         depth: 3 // Max depth of the table of contents, between 1 and 4

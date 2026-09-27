@@ -66,13 +66,13 @@ function buildSections(): SectionDef[] {
     {
       id: 'home-photos',
       title: '首页照片',
-      desc: '桌面端首页随机选择；站内翻页保持原有封面。导入后需保存配置并重新构建博客。',
+      desc: '桌面端首页随机选择；照片存于 public/home/。导入后需保存配置并重新构建博客。',
       kind: 'homePhotos',
     },
     {
       id: 'home-photos-mobile',
       title: '移动端首页照片',
-      desc: '手机端随机选择；留空时使用上方的首页照片。照片按屏幕高度显示，左右不足时用虚化背景填充。导入后需保存配置并重新构建博客。',
+      desc: '手机端随机选择；照片存于 public/home-mobile/，留空时使用上方的首页照片。导入后需保存配置并重新构建博客。',
       kind: 'homePhotosMobile',
     },
     {
@@ -312,7 +312,7 @@ function renderHomePhotos(state: ConfigState, main: HTMLElement, badge: HTMLElem
         for (const [index, file] of files.entries()) {
           uploadButton.textContent = `导入中 ${index + 1}/${files.length}`
           try {
-            const result = await api.uploadHomePhoto(file)
+            const result = await api.uploadHomePhoto(file, kind === 'homePhotosMobile')
             photos.push(result.url)
             imported++
           } catch (error) {
@@ -338,7 +338,7 @@ function renderHomePhotos(state: ConfigState, main: HTMLElement, badge: HTMLElem
       ? el('div', { class: 'cfg-photo-grid' }, photos.map((url, index) => {
           const name = url.split('/').pop() || url
           return el('div', { class: 'cfg-photo' }, [
-            el('img', { src: `/api/upload/home/${encodeURIComponent(name)}`, alt: name, loading: 'lazy' }),
+            el('img', { src: `/api/upload/${kind === 'homePhotosMobile' ? 'home-mobile' : 'home'}/${encodeURIComponent(name)}`, alt: name, loading: 'lazy' }),
             el('div', { class: 'cfg-photo-caption' }, [
               el('span', { title: name }, [name]),
               el('button', { class: 'row-act row-act-danger', type: 'button', title: '从随机照片中移除', onclick: () => {
