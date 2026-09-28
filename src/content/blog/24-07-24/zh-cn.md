@@ -2,7 +2,7 @@
 title: 日出
 pubDate: '2024-07-24'
 description: ''
-image: ./IMG_1417-topaz-denoise-2.webp
+image: ./IMG_1417-topaz-denoise.webp
 draft: false
 slugId: 24-07-24
 pinTop: 0

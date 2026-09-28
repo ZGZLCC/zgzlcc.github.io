@@ -2,7 +2,7 @@
 title: 哈尔滨
 pubDate: '2024-11-24'
 description: ''
-image: ./IMG_4422-2.webp
+image: ./IMG_4422.webp
 draft: false
 slugId: 24-11-24
 pinTop: 0

@@ -32,3 +32,7 @@ pnpm-debug.log*
 
 # AI tools
 AGENT.md
+
+# local-only service launcher
+/manage.cmd
+/manage.ps1

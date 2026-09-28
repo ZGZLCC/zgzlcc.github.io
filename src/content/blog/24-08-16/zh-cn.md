@@ -2,7 +2,7 @@
 title: 八月小结
 pubDate: '2024-08-16'
 description: ''
-image: ./IMG_2007-2.webp
+image: ./IMG_2007.webp
 draft: false
 slugId: 24-08-16
 pinTop: 0

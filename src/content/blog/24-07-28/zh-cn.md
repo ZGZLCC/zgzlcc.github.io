@@ -2,7 +2,7 @@
 title: 七月小结
 pubDate: '2024-07-28'
 description: ''
-image: ./IMG_0960-topaz-denoiseraw-2.webp
+image: ./IMG_0960-topaz-denoiseraw.webp
 draft: false
 slugId: 24-07-28
 pinTop: 0
