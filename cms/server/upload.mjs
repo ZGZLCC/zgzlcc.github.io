@@ -1,6 +1,6 @@
 // upload.mjs — 相册照片导入 API
 import { Hono } from 'hono'
-import { open, stat, rm, mkdir, readFile } from 'node:fs/promises'
+import { open, stat, rm, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join, basename, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { safeRel, blogPath } from './store.mjs'
@@ -99,8 +99,18 @@ upload.post('/:album', async (c) => {
   }
   try {
     const output = await preparePhoto(file)
+    const preview = await sharp(output).resize(64, 64, { fit: 'inside' }).webp({ quality: 45 }).toBuffer()
     await mkdir(dir, { recursive: true })
-    return c.json(await savePhoto(file, output, dir, `/${album}/`))
+    const saved = await savePhoto(file, output, dir, `/${album}/`)
+    try {
+      await mkdir(join(dir, 'preview'), { recursive: true })
+      await writeFile(join(dir, 'preview', saved.name), preview)
+    } catch (error) {
+      await rm(join(dir, 'preview', saved.name), { force: true })
+      await rm(join(dir, saved.name), { force: true })
+      throw error
+    }
+    return c.json(saved)
   } catch (error) {
     return uploadError(c, error)
   }

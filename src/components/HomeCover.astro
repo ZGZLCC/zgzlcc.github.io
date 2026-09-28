@@ -11,9 +11,31 @@ const { title, subTitle, photos, mobilePhotos } = Astro.props;
 
 <section id="home-cover" class="home-cover" data-photos={JSON.stringify(photos)} data-mobile-photos={JSON.stringify(mobilePhotos)} aria-label={title}>
   <div class="home-media" aria-hidden="true">
-    <img class="home-photo-blur" alt="" />
+    <img class="home-photo-blur" alt="" fetchpriority="high" />
     <img class="home-photo" alt="" fetchpriority="high" />
   </div>
+  <script is:inline data-astro-rerun>
+    (() => {
+      const hero = document.currentScript?.parentElement;
+      if (!hero || hero.id !== 'home-cover') return;
+      const desktop = JSON.parse(hero.dataset.photos || '[]');
+      const mobile = JSON.parse(hero.dataset.mobilePhotos || '[]');
+      const preferred = matchMedia('(max-width: 775px)').matches ? [mobile, desktop] : [desktop, mobile];
+      const photos = [...new Set(preferred.find((list) => list.length) || [])];
+      let previous = '';
+      try { previous = localStorage.getItem('momo:last-home-photo') || ''; } catch {}
+      const choices = photos.filter((photo) => photo !== previous);
+      const pool = choices.length ? choices : photos;
+      const photo = pool[Math.floor(Math.random() * pool.length)];
+      if (!photo) return;
+      hero.dataset.photo = photo;
+      try { localStorage.setItem('momo:last-home-photo', photo); } catch {}
+      const blur = hero.querySelector('.home-photo-blur');
+      blur.addEventListener('error', () => { blur.src = photo; }, { once: true });
+      blur.src = photo.replace(/\/([^/]+)$/, '/preview/$1');
+      hero.querySelector('.home-photo').src = photo;
+    })();
+  </script>
   <div class="home-copy">
     <h1>{title}</h1>
     <p>{subTitle}</p>
@@ -61,7 +83,10 @@ const { title, subTitle, photos, mobilePhotos } = Astro.props;
     width: 100%;
     height: auto;
     transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity .4s ease;
   }
+  .home-cover.photo-ready .home-photo { opacity: 1; }
   @media (max-width: 775px) {
     .home-photo { width: auto; height: 100%; }
   }
@@ -134,12 +159,11 @@ const { title, subTitle, photos, mobilePhotos } = Astro.props;
   }
   @media (prefers-reduced-motion: reduce) {
     .home-cover.photo-ready .home-copy h1, .home-cover.photo-ready .home-copy p { animation: none; }
-    .home-arrow { transition: none; }
+    .home-arrow, .home-photo { transition: none; }
   }
 </style>
 
 <script>
-  import { pickHomePhoto } from '../utils/homePhoto';
   let cleanupHome = () => {};
 
   document.addEventListener('astro:page-load', () => {
@@ -147,14 +171,7 @@ const { title, subTitle, photos, mobilePhotos } = Astro.props;
     const hero = document.querySelector<HTMLElement>('#home-cover');
     if (!hero) return;
 
-    const desktopPhotos = JSON.parse(hero.dataset.photos || '[]') as string[];
-    const mobilePhotos = JSON.parse(hero.dataset.mobilePhotos || '[]') as string[];
-    let previous = '';
-    try { previous = localStorage.getItem('momo:last-home-photo') || ''; } catch { /* storage may be disabled */ }
-    const photo = pickHomePhoto(desktopPhotos, mobilePhotos, window.matchMedia('(max-width: 775px)').matches, previous);
-    if (photo) {
-      try { localStorage.setItem('momo:last-home-photo', photo); } catch { /* storage may be disabled */ }
-    }
+    const photo = hero.dataset.photo;
     const mainPhoto = hero.querySelector<HTMLImageElement>('.home-photo')!;
     const revealCopy = () => requestAnimationFrame(() => {
       if (hero.isConnected) hero.classList.add('photo-ready');
@@ -162,8 +179,7 @@ const { title, subTitle, photos, mobilePhotos } = Astro.props;
     if (photo) {
       mainPhoto.addEventListener('load', revealCopy, { once: true });
       mainPhoto.addEventListener('error', revealCopy, { once: true });
-      hero.querySelector<HTMLImageElement>('.home-photo-blur')!.src = photo;
-      mainPhoto.src = photo;
+      if (mainPhoto.complete) revealCopy();
     } else revealCopy();
 
     const media = hero.querySelector<HTMLElement>('.home-media')!;
