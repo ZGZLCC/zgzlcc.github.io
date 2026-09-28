@@ -53,9 +53,9 @@ export const siteConfig: SiteConfig = {
 }
 
 export const profileConfig: ProfileConfig = {
-    avatar: "assets/Motues.jpg", // Relative to the /src directory. Relative to the /public directory if it starts with '/'
+    avatar: "assets/zgzlcc.png", // Relative to the /src directory. Relative to the /public directory if it starts with '/'
     name: "zgzlcc", // Used in the footer of the blog
-    description: "Life is colorful!", // Used in SEO
+    description: "等风来，不如追风去!", // Used in SEO
     indexPage: "https://github.com/ZGZLCC", // The homepage, used in footer and SEO
     startYear: 2024, // The year the site was created, used in the footer
 }
@@ -97,10 +97,16 @@ export const friendLinkConfig: FriendLink[] = [
         description: 'Like River!' // Description of the friend link, set to an empty string if not needed
     },
     {
-        name: 'Astro',
-        avatar: 'https://avatars.githubusercontent.com/u/44914786',
-        url: 'https://astro.build',
-        description: 'Build fast websites, faster.'
+        name: 'Miles',
+        avatar: 'https://miles-gift.github.io/_astro/yoyo-avatar.ZUQkIl04_Z1xVya5.webp',
+        url: 'https://miles-gift.github.io/',
+        description: 'yoyo!'
+    },
+    {
+        name: "Astro",
+        avatar: "https://avatars.githubusercontent.com/u/44914786",
+        url: "https://astro.build",
+        description: "Build fast websites, faster."
     }
     // Add more friend links here
 ]
