@@ -25,7 +25,7 @@ const pageTitle = t("header.archive") + " - " + siteConfig.title;
 const pageDescription = `${t("cover.title.archive")} - ${t("cover.subTitle.archive", { count: allBlogPosts.length })}`;
 ---
 
-<MainPageLayout title={pageTitle} lang={currentLang} description={pageDescription}>
+<MainPageLayout title={pageTitle} lang={currentLang} description={pageDescription} photoBackground="reuse">
     <ArchivePanel
         client:visible
         sortedPosts={allBlogPosts}

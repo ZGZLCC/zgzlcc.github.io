@@ -2,34 +2,23 @@
 interface Props {
   title: string;
   subTitle: string;
-  photos: string[];
-  mobilePhotos: string[];
 }
 
-const { title, subTitle, photos, mobilePhotos } = Astro.props;
+const { title, subTitle } = Astro.props;
 ---
 
-<section id="home-cover" class="home-cover" data-photos={JSON.stringify(photos)} data-mobile-photos={JSON.stringify(mobilePhotos)} aria-label={title}>
-  <div class="home-media" aria-hidden="true">
-    <img class="home-photo-blur" alt="" fetchpriority="high" />
-    <img class="home-photo" alt="" fetchpriority="high" />
+<section id="home-cover" class="home-cover" aria-label={title}>
+  <div class="home-media photo-layer" aria-hidden="true">
+    <img class="home-photo-blur photo-layer-blur" alt="" fetchpriority="high" />
+    <img class="home-photo photo-layer-main" alt="" fetchpriority="high" />
   </div>
   <script is:inline data-astro-rerun>
     (() => {
       const hero = document.currentScript?.parentElement;
       if (!hero || hero.id !== 'home-cover') return;
-      const desktop = JSON.parse(hero.dataset.photos || '[]');
-      const mobile = JSON.parse(hero.dataset.mobilePhotos || '[]');
-      const preferred = matchMedia('(max-width: 775px)').matches ? [mobile, desktop] : [desktop, mobile];
-      const photos = [...new Set(preferred.find((list) => list.length) || [])];
-      let previous = '';
-      try { previous = localStorage.getItem('momo:last-home-photo') || ''; } catch {}
-      const choices = photos.filter((photo) => photo !== previous);
-      const pool = choices.length ? choices : photos;
-      const photo = pool[Math.floor(Math.random() * pool.length)];
+      const photo = document.querySelector('#page-photo-background')?.dataset.photo;
       if (!photo) return;
       hero.dataset.photo = photo;
-      try { localStorage.setItem('momo:last-home-photo', photo); } catch {}
       const blur = hero.querySelector('.home-photo-blur');
       blur.addEventListener('error', () => { blur.src = photo; }, { once: true });
       blur.src = photo.replace(/\/([^/]+)$/, '/preview/$1');
@@ -65,31 +54,11 @@ const { title, subTitle, photos, mobilePhotos } = Astro.props;
     pointer-events: none;
     background: #252529;
   }
-  .home-media img {
-    display: block;
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    max-width: none;
-  }
-  .home-photo-blur {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transform: translate(-50%, -50%) scale(1.1);
-    filter: blur(38px);
-  }
   .home-photo {
-    width: 100%;
-    height: auto;
-    transform: translate(-50%, -50%);
     opacity: 0;
     transition: opacity .4s ease;
   }
   .home-cover.photo-ready .home-photo { opacity: 1; }
-  @media (max-width: 775px) {
-    .home-photo { width: auto; height: 100%; }
-  }
   .home-media::after {
     content: '';
     position: absolute;

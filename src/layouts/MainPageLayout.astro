@@ -3,6 +3,8 @@ import Layout from '@layouts/Layout.astro';
 import Header from '@components/Header.astro';
 import Footer from '@components/Footer.astro';
 import Search from '@components/misc/Search.astro';
+import PagePhotoBackground from '@components/PagePhotoBackground.astro';
+import { siteConfig } from '@/config';
 
 
 interface Props {
@@ -19,6 +21,7 @@ interface Props {
   structuredData?: Record<string, unknown> | Record<string, unknown>[];
   /** 页面是否渲染 Markdown 正文（透传给 Layout，用于异步加载引用块字体） */
   markdownFont?: boolean;
+  photoBackground?: 'home' | 'reuse';
 }
 const {
   title,
@@ -33,6 +36,7 @@ const {
   noindex,
   structuredData,
   markdownFont,
+  photoBackground,
 } = Astro.props;
 
 ---
@@ -51,7 +55,9 @@ const {
   structuredData={structuredData}
   markdownFont={markdownFont}
 >
-  <div class="flex flex-col min-h-screen">
+  <div class="relative isolate flex flex-col min-h-screen">
+    {photoBackground && (siteConfig.homePhotos.length > 0 || siteConfig.homePhotosMobile.length > 0) &&
+      <PagePhotoBackground newPhoto={photoBackground === 'home'} />}
     <div>
       <Header />
     </div>

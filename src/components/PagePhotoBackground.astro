@@ -1,0 +1,67 @@
+---
+import { siteConfig } from '@/config';
+
+interface Props {
+  newPhoto?: boolean;
+}
+
+const { newPhoto = false } = Astro.props;
+---
+
+<div
+  id="page-photo-background"
+  class="page-photo-background photo-layer"
+  data-photos={JSON.stringify(siteConfig.homePhotos)}
+  data-mobile-photos={JSON.stringify(siteConfig.homePhotosMobile)}
+  data-new-photo={newPhoto}
+  aria-hidden="true"
+>
+  <img class="photo-layer-blur" alt="" />
+  <img class="photo-layer-main" alt="" />
+</div>
+<script is:inline data-astro-rerun>
+  (() => {
+    const backdrop = document.currentScript?.previousElementSibling;
+    if (backdrop?.id !== 'page-photo-background') return;
+    const desktop = JSON.parse(backdrop.dataset.photos || '[]');
+    const mobile = JSON.parse(backdrop.dataset.mobilePhotos || '[]');
+    const preferred = matchMedia('(max-width: 775px)').matches ? [mobile, desktop] : [desktop, mobile];
+    const photos = [...new Set(preferred.find((list) => list.length) || [])];
+    let previous = '';
+    try { previous = localStorage.getItem('momo:last-home-photo') || ''; } catch {}
+    const choices = backdrop.dataset.newPhoto === 'true'
+      ? photos.filter((photo) => photo !== previous)
+      : photos.includes(previous) ? [previous] : photos;
+    const pool = choices.length ? choices : photos;
+    const photo = pool[Math.floor(Math.random() * pool.length)];
+    if (!photo) return;
+    backdrop.dataset.photo = photo;
+    try { localStorage.setItem('momo:last-home-photo', photo); } catch {}
+    const blur = backdrop.querySelector('.photo-layer-blur');
+    blur.addEventListener('error', () => { blur.src = photo; }, { once: true });
+    blur.src = photo.replace(/\/([^/]+)$/, '/preview/$1');
+    const main = backdrop.querySelector('.photo-layer-main');
+    main.addEventListener('load', () => backdrop.classList.add('photo-ready'), { once: true });
+    main.src = photo;
+    if (main.complete && main.naturalWidth) backdrop.classList.add('photo-ready');
+  })();
+</script>
+
+<style is:global>
+  .page-photo-background {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    opacity: .12;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .page-photo-background .photo-layer-main {
+    opacity: 0;
+    transition: opacity .4s ease;
+  }
+  .page-photo-background.photo-ready .photo-layer-main { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) {
+    .page-photo-background .photo-layer-main { transition: none; }
+  }
+</style>
