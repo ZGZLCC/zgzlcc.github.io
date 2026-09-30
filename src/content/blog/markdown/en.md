@@ -295,6 +295,22 @@ Displayed as:
 ![Motues](./Motues.png "This is my avatar")
 <!-- <img src="./Motues.png" alt="Motues" title="This is my avatar" width="256" height="256"> -->
 
+### Manual collage
+
+Wrap images in `:::collage{columns=3}` to place 2, 3, or 4 photos per row. Put each image in its own paragraph; extra images continue on the next row. This works even when automatic collage is disabled. On mobile, photos and captions appear one by one at their original proportions.
+
+```markdown
+:::collage{columns=3}
+![First photo](./photo1.jpg "First photo")
+
+![Second photo](./photo2.jpg "Second photo")
+
+![Third photo](./photo3.jpg "Third photo")
+:::
+```
+
+In the local CMS, select “2/3/4 per row” and click “Manual collage” to insert a template or wrap selected images.
+
 ## Tables
 
 ### Table

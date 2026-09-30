@@ -11,19 +11,25 @@ pinTop: 0
 
 ==可可爱爱。==
 
+:::collage{columns=3}
 ![IMG_0777](./IMG_0777.webp)
 
 ![IMG_0779](./IMG_0779.webp)
 
 ![IMG_0782](./IMG_0782.webp)
+:::
 
+:::collage{columns=2}
 ![IMG_0769](./IMG_0769.webp)
 
 ![IMG_0788](./IMG_0788.webp)
+:::
 
+:::collage{columns=2}
 ![IMG_0871](./IMG_0871.webp)
 
 ![IMG_1727](./IMG_1727.webp)
+:::
 
 # 海景
 

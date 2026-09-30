@@ -39,7 +39,7 @@ export const siteConfig: SiteConfig = {
         LQIP: true, // Whether to enable LQIP (Low-Quality Image Placeholder) for image placeholders
         PhotoSwipe: true, // Whether to enable PhotoSwipe for image viewer
         imageCollage: {
-            enable: true, // Whether to automatically arrange consecutive images into a grid (collage)
+            enable: false, // Whether to automatically arrange consecutive images into a grid (collage)
             maxColumns: 2 // Max images per row in a collage (2 - 6); the actual number is chosen automatically
         },
         postCard: {

@@ -56,8 +56,93 @@ body {
 
 /* 段落 / 链接 */
 .markdown-content p { margin: 1em 0; }
-.markdown-content a { color: var(--link); text-decoration: none; }
-.markdown-content a:hover { text-decoration: underline; }
+.markdown-content p a,
+.markdown-content li a,
+.markdown-content blockquote a,
+.markdown-content h1 a,
+.markdown-content h2 a,
+.markdown-content h3 a,
+.markdown-content h4 a,
+.markdown-content h5 a,
+.markdown-content h6 a,
+.markdown-content table a,
+.markdown-content figcaption a,
+.markdown-content .quote a,
+.markdown-content .admonition-title a {
+  color: inherit;
+  text-decoration: none;
+  position: relative;
+  display: inline-block;
+}
+.markdown-content p a::before,
+.markdown-content li a::before,
+.markdown-content blockquote a::before,
+.markdown-content h1 a::before,
+.markdown-content h2 a::before,
+.markdown-content h3 a::before,
+.markdown-content h4 a::before,
+.markdown-content h5 a::before,
+.markdown-content h6 a::before,
+.markdown-content table a::before,
+.markdown-content figcaption a::before,
+.markdown-content .quote a::before,
+.markdown-content .admonition-title a::before {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  width: 100%;
+  border-bottom-style: dotted;
+  border-bottom-width: 2px;
+  transition: transform 0.3s ease;
+  transform-origin: right;
+  transform: scaleX(1);
+}
+.markdown-content p a:hover,
+.markdown-content li a:hover,
+.markdown-content blockquote a:hover,
+.markdown-content h1 a:hover,
+.markdown-content h2 a:hover,
+.markdown-content h3 a:hover,
+.markdown-content h4 a:hover,
+.markdown-content h5 a:hover,
+.markdown-content h6 a:hover,
+.markdown-content table a:hover,
+.markdown-content figcaption a:hover,
+.markdown-content .quote a:hover,
+.markdown-content .admonition-title a:hover { color: var(--link); }
+.markdown-content p a:hover::before,
+.markdown-content li a:hover::before,
+.markdown-content blockquote a:hover::before,
+.markdown-content h1 a:hover::before,
+.markdown-content h2 a:hover::before,
+.markdown-content h3 a:hover::before,
+.markdown-content h4 a:hover::before,
+.markdown-content h5 a:hover::before,
+.markdown-content h6 a:hover::before,
+.markdown-content table a:hover::before,
+.markdown-content figcaption a:hover::before,
+.markdown-content .quote a:hover::before,
+.markdown-content .admonition-title a:hover::before {
+  transform: scaleX(0);
+}
+.markdown-content .rainbow-text a::before { border-bottom-color: var(--link); }
+.markdown-content sup a[data-footnote-ref],
+.markdown-content section[data-footnotes] a[data-footnote-backref] {
+  color: var(--link);
+  text-decoration: none;
+}
+.markdown-content sup a[data-footnote-ref]::before,
+.markdown-content section[data-footnotes] a[data-footnote-backref]::before { content: none; }
+.markdown-content .newtab-icon {
+  display: inline-block;
+  width: 0.64em;
+  height: 0.64em;
+  margin-left: 0.12em;
+  vertical-align: 0.02em;
+  overflow: visible;
+  user-select: none;
+}
 
 /* 行内代码 / 代码块 */
 .markdown-content code {
@@ -289,7 +374,15 @@ body {
 .markdown-content .music-artist { font-size: 0.85em; color: var(--text-sub); }
 .markdown-content .fetch-error { opacity: 0.5; border: 1px solid #ff6b6b; }
 
-/* 连续图片自动拼图（与博客 src/styles/markdown.css 对应）
+.markdown-content img {
+  max-width: 100%;
+  height: auto;
+  margin: 1rem auto;
+  display: block;
+  border-radius: 6px;
+}
+
+/* 自动与 :::collage 手动拼图（与博客 src/styles/markdown.css 对应）
    --cols 是每行张数（插件智能选择），--span 让最后一行的图片补满整行 */
 .markdown-content .image-collage {
   --collage-gap: 8px;
@@ -335,36 +428,4 @@ body {
   margin: 0;
   border-radius: 0;
   object-fit: cover;
-}
-
-@media (max-width: 776px) {
-  .markdown-content .image-collage {
-    display: block;
-  }
-
-  .markdown-content .image-collage .collage-item {
-    margin: 1rem 0;
-  }
-
-  .markdown-content .image-collage figure { height: auto; }
-  .markdown-content .image-collage figcaption {
-    display: block;
-    text-align: center;
-  }
-
-  .markdown-content .image-collage .collage-media,
-  .markdown-content .image-collage .collage-media.collage-ratio {
-    height: auto;
-    aspect-ratio: auto;
-    overflow: visible;
-    background: none;
-  }
-  .markdown-content .image-collage .collage-media img {
-    max-width: 100%;
-    width: auto;
-    height: auto;
-    margin: 1rem auto;
-    border-radius: 6px;
-    object-fit: contain;
-  }
 }

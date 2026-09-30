@@ -73,21 +73,36 @@
 
 .markdown-content p a,
 .markdown-content li a,
+.markdown-content blockquote a,
+.markdown-content h1 a,
 .markdown-content h2 a,
 .markdown-content h3 a,
-.markdown-content table a {
+.markdown-content h4 a,
+.markdown-content h5 a,
+.markdown-content h6 a,
+.markdown-content table a,
+.markdown-content figcaption a,
+.markdown-content .quote a,
+.markdown-content .admonition-title a {
   color: inherit;
-  /* transition: color 0.3s ease; */
   text-decoration: none;
   position: relative;
   display: inline-block;
 }
-    
+
 .markdown-content p a::before,
 .markdown-content li a::before,
+.markdown-content blockquote a::before,
+.markdown-content h1 a::before,
 .markdown-content h2 a::before,
 .markdown-content h3 a::before,
-.markdown-content table a::before {
+.markdown-content h4 a::before,
+.markdown-content h5 a::before,
+.markdown-content h6 a::before,
+.markdown-content table a::before,
+.markdown-content figcaption a::before,
+.markdown-content .quote a::before,
+.markdown-content .admonition-title a::before {
   content: "";
   position: absolute;
   bottom: 2px;
@@ -95,27 +110,53 @@
   width: 100%;
   border-bottom-style: dotted;
   border-bottom-width: 2px;
-  /* background: currentColor; */
   transition: transform 0.3s ease;
   transform-origin: right;
   transform: scaleX(1);
 }
-    
+
 .markdown-content p a:hover,
 .markdown-content li a:hover,
+.markdown-content blockquote a:hover,
+.markdown-content h1 a:hover,
 .markdown-content h2 a:hover,
 .markdown-content h3 a:hover,
-.markdown-content table a:hover {
+.markdown-content h4 a:hover,
+.markdown-content h5 a:hover,
+.markdown-content h6 a:hover,
+.markdown-content table a:hover,
+.markdown-content figcaption a:hover,
+.markdown-content .quote a:hover,
+.markdown-content .admonition-title a:hover {
   color: var(--link-color);
 }
-    
+
 .markdown-content p a:hover::before,
 .markdown-content li a:hover::before,
+.markdown-content blockquote a:hover::before,
+.markdown-content h1 a:hover::before,
 .markdown-content h2 a:hover::before,
 .markdown-content h3 a:hover::before,
-.markdown-content table a:hover::before {
-  transform-origin: right;
+.markdown-content h4 a:hover::before,
+.markdown-content h5 a:hover::before,
+.markdown-content h6 a:hover::before,
+.markdown-content table a:hover::before,
+.markdown-content figcaption a:hover::before,
+.markdown-content .quote a:hover::before,
+.markdown-content .admonition-title a:hover::before {
   transform: scaleX(0);
+}
+
+.markdown-content .rainbow-text a::before { border-bottom-color: var(--link-color); }
+
+.markdown-content .newtab-icon {
+  display: inline-block;
+  width: 0.64em;
+  height: 0.64em;
+  margin-left: 0.12em;
+  vertical-align: 0.02em;
+  overflow: visible;
+  user-select: none;
 }
 
 .markdown-content strong {
@@ -261,7 +302,7 @@
   border-radius: 6px;
 }
 
-/* 连续图片自动拼图（插件 src/plugins/rehype-image-collage.mjs，开关见 siteConfig.theme.imageCollage）
+/* 自动与 :::collage 手动拼图（插件 src/plugins/rehype-image-collage.ts；开关只控制自动拼图）
    --cols 是每行张数（插件按图片数量智能选择），--span 让最后一行的图片补满整行 */
 .markdown-content .image-collage {
   --collage-gap: 8px;

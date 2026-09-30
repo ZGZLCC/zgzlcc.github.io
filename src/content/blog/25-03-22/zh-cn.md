@@ -11,18 +11,24 @@ pinTop: 0
 
 人气太旺啦！!!全是人，根本不好拍哇。!!
 
+:::collage{columns=2}
 ![IMG_6900](./IMG_6900.webp)
 
 ![IMG_6929](./IMG_6929.webp)
+:::
 
+:::collage{columns=2}
 ![IMG_6941](./IMG_6941.webp)
 
 ![IMG_6951](./IMG_6951.webp)
+:::
 
 # 跑车跑车
 
+:::collage{columns=3}
 ![IMG_6915](./IMG_6915.webp)
 
 ![IMG_6932](./IMG_6932.webp)
 
 ![IMG_6933](./IMG_6933.webp)
+:::

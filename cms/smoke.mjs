@@ -123,12 +123,41 @@ const titleInput = document.getElementById('f-title')
 const mdEditor = document.getElementById('md-editor')
 const frame = document.getElementById('preview-frame')
 if (!titleInput || !mdEditor || !frame) throw new Error('FAIL: 编辑器页面元素缺失')
+const toolLabels = new Set(Array.from(app.querySelectorAll('.editor-toolbar button'), (button) => button.textContent))
+for (const label of ['标题', '块引用', '嵌套引用', '无序列表', '有序列表', '任务清单', '表格', '删除线', '分隔线', '图注图片', '增强代码', '手动拼图']) {
+  if (!toolLabels.has(label)) throw new Error(`FAIL: Markdown 工具栏缺少「${label}」`)
+}
 console.log('PASS: 编辑器渲染（表单 + textarea + 预览 iframe）')
 
 // 等待首次预览渲染
 const previewOk = await waitFor(() => frame.srcdoc && frame.srcdoc.length > 200, 15000)
 if (!previewOk) throw new Error('FAIL: 预览未渲染')
 console.log('PASS: 实时预览已渲染, srcdoc len=' + frame.srcdoc.length)
+
+// ---------- 4.1 手动拼图工具栏：包裹选中图片，自动拼图关闭时仍能预览 ----------
+const collageSelect = app.querySelector('select[aria-label="手动拼图每行张数"]')
+const collageButton = Array.from(app.querySelectorAll('.editor-toolbar button'))
+  .find((button) => button.textContent === '手动拼图')
+if (!collageSelect || !collageButton) throw new Error('FAIL: 手动拼图工具缺失')
+collageSelect.value = '3'
+mdEditor.value = '![A](./a.jpg)\n\n![B](./b.jpg)\n\n![C](./c.jpg)'
+mdEditor.setSelectionRange(0, mdEditor.value.length)
+collageButton.click()
+if (!mdEditor.value.includes(':::collage{columns=3}') || !mdEditor.value.includes('![B](./b.jpg)')) {
+  throw new Error('FAIL: 手动拼图未包裹选中的图片')
+}
+if (!await waitFor(() => frame.srcdoc.includes('class="image-collage"'), 15000)) {
+  throw new Error('FAIL: 手动拼图未在预览中渲染')
+}
+mdEditor.value = ''
+mdEditor.setSelectionRange(0, 0)
+collageSelect.value = '4'
+collageButton.click()
+if (!mdEditor.value.includes(':::collage{columns=4}') ||
+    (mdEditor.value.match(/!\[照片 /g) ?? []).length !== 4) {
+  throw new Error('FAIL: 手动拼图模板不是四张图片')
+}
+console.log('PASS: 手动拼图工具栏包裹与模板插入成功，预览可渲染')
 
 // ---------- 5. 修改正文 → 防抖预览 ----------
 mdEditor.value = '# 冒烟测试\n\n::note[hello]\n\n$E=mc^2$'

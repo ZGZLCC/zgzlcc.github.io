@@ -1,7 +1,7 @@
 ---
 title: Markdown
 pubDate: '2025-09-21'
-description: 测试Markdown的基本功能
+description: ''
 image: ./cover.jpg
 draft: true
 slugId: momo/markdown
@@ -296,6 +296,22 @@ echo "more"
 显示如下:  
 ![Motues](./Motues.png "这是我的头像")
 <!-- <img src="./Motues.png" alt="Motues" title="这是我的头像" width="256" height="256"> -->
+
+### 手动拼图
+
+用 `:::collage{columns=3}` 包住图片，可指定每行放 2、3 或 4 张。每张图片单独成段；超出一行会自动换行。即使关闭了连续图片自动拼图，这条指令仍然生效。手机上仍逐张显示原图和图注。
+
+```markdown
+:::collage{columns=3}
+![照片一](./photo1.jpg "照片一")
+
+![照片二](./photo2.jpg "照片二")
+
+![照片三](./photo3.jpg "照片三")
+:::
+```
+
+在本地 CMS 的工具栏选择「2/3/4 张/行」，再点击「手动拼图」即可插入模板，或将选中的图片包进指令。
 
 ## 表格
 

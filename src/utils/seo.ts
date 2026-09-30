@@ -6,7 +6,10 @@
  */
 import { getImage } from 'astro:assets'
 import { i18n } from 'astro:config/client'
-import { profileConfig, siteConfig } from '@/config'
+import { i18nConfig, profileConfig, siteConfig } from '@/config'
+
+const defaultLocale = i18nConfig.defaultLanguage
+const prefixDefaultLocale = typeof i18n?.routing === 'object' && i18n.routing.prefixDefaultLocale
 
 /** 内容目录里的图片：构建期取出优化后的 URL 作为分享图 */
 const contentImages = import.meta.glob<ImageMetadata>(
@@ -39,15 +42,14 @@ export function normalizePath(pathname: string): string {
 
 /** 语言代码 -> BCP 47（zh-cn -> zh-CN），用于 <html lang> 与 og:locale */
 export function bcp47(lang?: string): string {
-    const raw = String(lang || i18n?.defaultLocale || 'en').replace(/_/g, '-')
+    const raw = String(lang || defaultLocale).replace(/_/g, '-')
     const [head, ...rest] = raw.split('-')
     return [head.toLowerCase(), ...rest.map((s) => s.toUpperCase())].join('-')
 }
 
 /** 站点支持的语言代码列表 */
 export function localeCodes(): string[] {
-    const locales = i18n?.locales || []
-    return locales.map((l) => (typeof l === 'string' ? l : l.path))
+    return i18nConfig.supportedLanguages
 }
 
 /** 去掉路径开头的语言前缀，得到「语言无关」路径 */
@@ -56,9 +58,8 @@ export function stripLocale(pathname: string): string {
     const base = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
     if (base && p.startsWith(`${base}/`)) p = p.slice(base.length)
 
-    const prefixDefault = !!i18n?.routing?.prefixDefaultLocale
     const segment = p.replace(/^\/+/, '').split('/')[0]
-    if (segment && localeCodes().includes(segment) && (segment !== i18n.defaultLocale || prefixDefault)) {
+    if (segment && localeCodes().includes(segment) && (segment !== defaultLocale || prefixDefaultLocale)) {
         p = `/${p.replace(/^\/+/, '').split('/').slice(1).join('/')}`
     }
     return p.startsWith('/') ? p : `/${p}`
@@ -67,19 +68,17 @@ export function stripLocale(pathname: string): string {
 /** 同一页面在各语言下的 URL（hreflang 用） */
 export function localeAlternates(pathname: string): { lang: string; url: string }[] {
     const rest = stripLocale(pathname)
-    const prefixDefault = !!i18n?.routing?.prefixDefaultLocale
     const codes = localeCodes()
-    return (codes.length ? codes : [i18n.defaultLocale]).map((code) => ({
+    return (codes.length ? codes : [defaultLocale]).map((code) => ({
         lang: code,
-        url: absoluteUrl(code === i18n.defaultLocale && !prefixDefault ? rest : `/${code}${rest}`),
+        url: absoluteUrl(code === defaultLocale && !prefixDefaultLocale ? rest : `/${code}${rest}`),
     }))
 }
 
 /** x-default 指向默认语言版本 */
 export function defaultLocaleUrl(pathname: string): string {
     const rest = stripLocale(pathname)
-    const prefixDefault = !!i18n?.routing?.prefixDefaultLocale
-    return absoluteUrl(prefixDefault ? `/${i18n.defaultLocale}${rest}` : rest)
+    return absoluteUrl(prefixDefaultLocale ? `/${defaultLocale}${rest}` : rest)
 }
 
 /** 压缩空白并截断过长的文本（meta description 建议 150-160 字符） */
@@ -115,7 +114,7 @@ export function websiteJsonLd(lang?: string): Record<string, unknown> {
         ...(siteConfig.subTitle ? { alternateName: siteConfig.subTitle } : {}),
         url: absoluteUrl('/'),
         description: profileConfig.description || '',
-        inLanguage: bcp47(lang || i18n.defaultLocale),
+        inLanguage: bcp47(lang || defaultLocale),
         author: owner,
         publisher: owner,
     }

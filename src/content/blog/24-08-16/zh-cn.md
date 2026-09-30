@@ -11,9 +11,11 @@ pinTop: 0
 
 因为花切大会又回到了武汉。
 
+:::collage{columns=2}
 ![IMG_1858](./IMG_1858.webp)
 
 ![IMG_1864](./IMG_1864.webp)
+:::
 
 # 小狗的故事
 
@@ -29,18 +31,26 @@ pinTop: 0
 
 硬是跟了我们一个小时，挺厉害的。
 
+:::collage{columns=2}
 ![IMG_2007](./IMG_2007.webp)
 
 ![IMG_2015](./IMG_2015.webp)
+:::
 
 # 麓山下
 
 强烈安利这家店子！
 
+:::collage{columns=2}
 ![IMG_2106](./IMG_2106.webp)
 
 ![IMG_2114](./IMG_2114.webp)
+:::
 
+:::collage{columns=2}
 ![IMG_2131](./IMG_2131.webp)
 
 ![IMG_2196](./IMG_2196.webp)
+:::
+
+

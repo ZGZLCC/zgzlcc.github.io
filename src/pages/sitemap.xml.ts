@@ -5,8 +5,7 @@
  * 与页面实际生成的路径严格一致，同时不给模板增加新依赖。
  */
 import type { APIContext } from 'astro';
-import { i18n } from 'astro:config/client';
-import { siteConfig } from '@/config';
+import { i18nConfig, siteConfig } from '@/config';
 import { getBlogEntrySort } from '@utils/contentUtils';
 import { absoluteUrl, bcp47, normalizePath } from '@utils/seo';
 import { getRelativeLocaleUrl } from '@utils/urlUtils';
@@ -32,10 +31,8 @@ function isoDate(value: Date | string | undefined): string {
 }
 
 export async function GET(_context: APIContext) {
-  const locales = (i18n?.locales || [i18n?.defaultLocale]).map((l) =>
-    typeof l === 'string' ? l : l.path,
-  );
-  const defaultLocale = i18n.defaultLocale;
+  const locales = i18nConfig.supportedLanguages;
+  const defaultLocale = i18nConfig.defaultLanguage;
   const entries = new Map<string, Entry>();
 
   const push = (rest: string, lastmod?: string) => {

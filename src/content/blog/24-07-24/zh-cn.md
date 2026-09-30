@@ -11,14 +11,21 @@ pinTop: 0
 
 不枉那么早起床！
 
+:::collage{columns=2}
 ![IMG_1414-topaz-denoise](./IMG_1414-topaz-denoise.webp)
 
 ![IMG_1407-topaz-denoise](./IMG_1407-topaz-denoise.webp)
+:::
 
+:::collage{columns=2}
 ![IMG_1413-topaz-denoise](./IMG_1413-topaz-denoise.webp)
 
 ![IMG_1417-topaz-denoise](./IMG_1417-topaz-denoise.webp)
+:::
 
+:::collage{columns=2}
 ![IMG_1449-topaz-denoise](./IMG_1449-topaz-denoise.webp)
 
 ![IMG_1454-topaz-denoise](./IMG_1454-topaz-denoise.webp)
+:::
+

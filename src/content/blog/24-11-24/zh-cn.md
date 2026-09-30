@@ -11,19 +11,25 @@ pinTop: 0
 
 ## 松花江畔的日落
 
+:::collage{columns=2}
 ![IMG_4414](./IMG_4414.webp)
 
 ![IMG_4422](./IMG_4422.webp)
+:::
 
+:::collage{columns=2}
 ![IMG_4434](./IMG_4434.webp)
 
 ![IMG_4439](./IMG_4439.webp)
+:::
 
 ## 其他照片
 
+:::collage{columns=2}
 ![IMG_4363](./IMG_4363.webp)
 
 ![IMG_4549](./IMG_4549.webp)
+:::
 
 # 后记
 

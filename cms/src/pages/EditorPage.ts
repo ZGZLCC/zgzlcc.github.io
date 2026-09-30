@@ -81,26 +81,54 @@ interface InsertTool {
   template?: string
 }
 
-function buildToolbar(getMd: () => HTMLTextAreaElement | null): HTMLElement {  const noteSelect = el('select', { class: 'input tool-select', title: '提示块类型' }, [
+function buildToolbar(getMd: () => HTMLTextAreaElement | null): HTMLElement {
+  const headingSelect = el('select', { class: 'input tool-select', title: '标题级别', 'aria-label': '标题级别' },
+    Array.from({ length: 6 }, (_, i) => el('option', { value: String(i + 1) }, [`H${i + 1}`])))
+  headingSelect.value = '2'
+  const noteSelect = el('select', { class: 'input tool-select', title: '提示块类型', 'aria-label': '提示块类型' }, [
     el('option', { value: 'note' }, ['note']),
     el('option', { value: 'tip' }, ['tip']),
     el('option', { value: 'important' }, ['important']),
     el('option', { value: 'caution' }, ['caution']),
     el('option', { value: 'warning' }, ['warning']),
   ])
+  const collageSelect = el('select', { class: 'input tool-select', title: '手动拼图每行张数', 'aria-label': '手动拼图每行张数' }, [
+    el('option', { value: '2' }, ['2 张/行']),
+    el('option', { value: '3' }, ['3 张/行']),
+    el('option', { value: '4' }, ['4 张/行']),
+  ])
   const btn = (t: InsertTool) =>
     el('button', { class: 'tool-btn', title: t.title, onclick: () => applyTool(getMd(), t) }, [t.label])
   const sep = () => el('span', { class: 'tool-sep' })
 
   return el('div', { class: 'editor-toolbar' }, [
+    headingSelect,
+    el('button', { class: 'tool-btn', title: '插入 H1–H6 标题', onclick: () =>
+      applyTool(getMd(), { template: `\n\n${'#'.repeat(Number(headingSelect.value))} {sel}{cur}{ph:标题}\n\n` }),
+    }, ['标题']),
     btn({ label: '加粗', title: '加粗 **文字**', wrap: ['**', '**'] }),
     btn({ label: '斜体', title: '斜体 *文字*', wrap: ['*', '*'] }),
+    btn({ label: '粗斜', title: '粗斜体 ***文字***', wrap: ['***', '***'] }),
+    btn({ label: '删除线', title: '删除线 ~~文字~~', wrap: ['~~', '~~'] }),
     btn({ label: '代码', title: '行内代码 `code`', wrap: ['`', '`'] }),
     btn({ label: '链接', title: '链接 [文字](https://…)', template: '[{sel}]({cur}https://)' }),
+    btn({ label: '链接标题', title: '带悬停提示的链接 [文字](https://… "标题")', template: '[{sel}]({cur}https:// "标题")' }),
+    btn({ label: '新窗口链接', title: '新标签页打开 [文字](https://…){target="_blank"}', template: '[{sel}]({cur}https://){target="_blank"}' }),
     btn({ label: '图片', title: '图片 ![描述](./图片.png)', template: '![{sel}]({cur}./图片.png)' }),
-    btn({ label: '引用', title: '居中引用 ::quote[内容]', wrap: ['::quote[', ']'] }),
+    btn({ label: '图注图片', title: '带图注的图片 ![描述](./图片.png "图注")', template: '![{sel}]({cur}./图片.png "图注")' }),
+    btn({ label: '块引用', title: 'Markdown 块引用 > 内容', template: '\n\n> {sel}{cur}{ph:内容}\n\n' }),
+    btn({ label: '嵌套引用', title: 'Markdown 嵌套块引用 > > 内容', template: '\n\n> > {sel}{cur}{ph:内容}\n\n' }),
+    btn({ label: '居中引用', title: '居中引用 ::quote[内容]', wrap: ['::quote[', ']'] }),
+    sep(),
+    btn({ label: '无序列表', title: 'Markdown 无序列表', template: '\n\n- {sel}{cur}{ph:项目}\n\n' }),
+    btn({ label: '有序列表', title: 'Markdown 有序列表', template: '\n\n1. {sel}{cur}{ph:项目}\n\n' }),
+    btn({ label: '任务清单', title: 'Markdown 任务清单', template: '\n\n- [ ] {sel}{cur}{ph:任务}\n\n' }),
+    btn({ label: '表格', title: 'Markdown 表格；对齐行分别示例左、中、右对齐，竖线可写 &#124;', template: '\n\n| {sel}{cur}{ph:列 1} | 列 2 | 列 3 |\n| :--- | :---: | ---: |\n| 内容 | 内容 | 内容 |\n\n' }),
+    btn({ label: '换行', title: 'Markdown 换行：行尾两个空格', template: '{sel}  \n{cur}' }),
+    btn({ label: '分隔线', title: 'Markdown 水平线 ---', template: '{sel}\n\n---\n\n{cur}' }),
     sep(),
     btn({ label: '代码块', title: '代码块 ```lang', wrap: ['```\n', '\n```'] }),
+    btn({ label: '增强代码', title: 'Expressive Code：标题、行号等参数可在首行修改', template: '\n\n```js title="文件.js" showLineNumbers\n{sel}{cur}{ph:代码}\n```\n\n' }),
     btn({ label: 'Typst', title: 'Typst 代码块 ```typst', wrap: ['```typst\n', '\n```'] }),
     sep(),
     btn({ label: '公式', title: '行内公式 $…$', wrap: ['$', '$'] }),
@@ -114,6 +142,18 @@ function buildToolbar(getMd: () => HTMLTextAreaElement | null): HTMLElement {  c
     }, ['提示块']),
     btn({ label: 'GitHub', title: 'GitHub 仓库卡片 ::github{repo="owner/repo"}', template: '::github{repo="{cur}owner/repo"}' }),
     btn({ label: '音乐', title: '网易云音乐卡片 ::music{id="歌曲ID"}', template: '::music{id="{cur}歌曲ID"}' }),
+    sep(),
+    collageSelect,
+    el('button', { class: 'tool-btn', title: '将选中的图片排成每行 2–4 张；未选中时插入图片模板', onclick: () => {
+      const md = getMd()
+      if (!md) return
+      const count = Number(collageSelect.value)
+      const selected = md.selectionStart !== md.selectionEnd
+      const photos = Array.from({ length: count }, (_, i) =>
+        `![照片 ${i + 1}](${i === 0 ? '{cur}' : ''}./照片${i + 1}.jpg)`).join('\n\n')
+      applyTool(md, { template: `\n\n:::collage{columns=${count}}\n${selected ? '{sel}' : photos}\n:::\n\n` })
+    } }, ['手动拼图']),
+    sep(),
     btn({ label: '注音', title: '注音 {中文}(pinyin)', template: '{{sel}中文}({cur}pinyin)' }),
     btn({ label: '模糊', title: '模糊内容（hover 显示）!!文字!!', wrap: ['!!', '!!'] }),
     btn({ label: '彩虹', title: '彩虹文字 ==文字==', wrap: ['==', '=='] }),
@@ -229,7 +269,7 @@ function buildShell(root: HTMLElement, state: EditorState) {
           class: 'md-editor',
           id: 'md-editor',
           spellcheck: false,
-          placeholder: '在这里编写 Markdown 正文…\n\n支持博客全部自定义语法：:::note{...}、$公式$、```typst、::github{}、{注音}(かたかな)、!!折叠!!、==彩虹==、++下划线++',
+          placeholder: '在这里编写 Markdown 正文…\n\n支持博客自定义语法：:::collage{columns=2} 手动拼图、:::note{...}、$公式$、```typst、::github{}、{注音}(かたかな)、!!折叠!!、==彩虹==、++下划线++',
         }),
       ]),
       el('section', { class: 'editor-right', id: 'editor-right' }, [

@@ -1,6 +1,6 @@
 import { getCollection, getEntry } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
-import { i18n } from "astro:config/client";
+import { i18nConfig } from '@/config';
 
 /**
  * 获取排序后的博客条目
@@ -14,7 +14,7 @@ export type BlogEntryWithLocaleStatus = CollectionEntry<'blog'> & {
 };
 
 export async function getBlogEntrySort(
-  lang: string,
+  lang = i18nConfig.defaultLanguage,
   filter?: (entry: CollectionEntry<'blog'>) => boolean | undefined,
   sort?: (a: CollectionEntry<'blog'>, b: CollectionEntry<'blog'>) => number
 ): Promise<BlogEntryWithLocaleStatus[]> { // 修改返回类型
@@ -30,7 +30,7 @@ export async function getBlogEntrySort(
   const blogEntries = await getCollection('blog', filter || defaultFilter);
 
   const grouped = new Map<string, Record<string, CollectionEntry<'blog'>>>();
-  const defaultLanguage = i18n.defaultLocale;
+  const defaultLanguage = i18nConfig.defaultLanguage;
 
   for (const post of blogEntries) {
     const parts = post.id.split('/');
@@ -80,7 +80,7 @@ export async function getSpec(
     lang: string,
     spec: string
 ) {
-    const defaultLanguage = i18n.defaultLocale;
+    const defaultLanguage = i18nConfig.defaultLanguage;
     let collection = await getEntry('spec', `${spec}/${lang}`)
     if(!collection) collection = await getEntry('spec', `${spec}/${defaultLanguage}`);
     return collection;

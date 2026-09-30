@@ -21,7 +21,7 @@ pnpm cms
 - **概览页**（`#/`）：文章总数 / 已发布 / 草稿 / 置顶 / 分类数 / 正文总字数统计，分类分布条形图，语言版本覆盖（中英双语），最近文章列表
 - **网站配置页**（`#/config`）：`src/config.ts` 的可视化编辑器（站点信息、阅读与目录、评论、主题、个人信息、许可协议、国际化、各语言 Cover 文案、友链列表；支持增删与上下移动友链），可展开查看文件源码；保存时**只改写真正改动过的字段**，文件里的注释与排版保持不变
 - **文章列表**（`#/list`）：搜索、分类筛选、草稿/已发布筛选、语言徽章；支持**卡片 / 表格**两种视图模式（localStorage 记忆选择）与**多种排序**（默认置顶+日期 / 发布日期升降序 / 标题 / 路径 / 分类，中文按拼音排序）；表格**列宽按内容自动分配**（宽裕时按内容比例铺满整行，狭窄时压缩标题/路径并保底最小宽度，窗口变化自动重算），表格右侧**行内操作**（置顶/取消置顶、草稿/发布切换、删除）
-- **Markdown 编辑器**：frontmatter 表单 + 正文源码，左侧编辑右侧**实时预览**（防抖 500ms）；编辑区上方**快速插入工具栏**（加粗/斜体/行内代码/链接/图片/引用、代码块/Typst、行内/块公式、提示块（note/tip/important/caution/warning）、GitHub/音乐卡片、注音/折叠/彩虹/下划线），支持选中文本包裹与光标定位
+- **Markdown 编辑器**：frontmatter 表单 + 正文源码，左侧编辑右侧**实时预览**（防抖 500ms）；编辑区上方**快速插入工具栏**（标题、强调、引用、列表、表格、链接/图片、代码块/Typst、公式、提示块、卡片、注音/折叠/彩虹/下划线、手动拼图），支持选中文本包裹与光标定位
 - **完整自定义语法预览**：与博客渲染管线一致（见下方语法表）
 - **多语言版本**：同路径 `zh-cn.md` / `en.md` 标签页切换，可新建缺失的语言版本
 - **在文件夹中打开**：文章编辑页右上角按钮，用系统默认的文件管理器打开当前文章所在文件夹（Windows `explorer.exe` / macOS `open` / Linux `xdg-open`）
@@ -57,7 +57,7 @@ cms/
 ```
 
 - **API 端口**：5188（唯一端口，Vite dev server 内嵌 Hono）
-- **预览管线**：直接复用 `../src/plugins/*.mjs`（remark-typst、remark-directive-rehype、remark-combined、admonition、github/music/quote 卡片、figure 插件）+ KaTeX，与博客 astro.config.mjs 的插件顺序一致，跳过仅构建期需要的 reading-time 与 LQIP 插件。
+- **预览管线**：直接复用 `../src/plugins/*.ts`（remark-typst、remark-directive-rehype、remark-combined、admonition、github/music/quote 卡片、figure 插件）+ KaTeX，与博客 astro.config.mjs 的插件顺序一致，跳过仅构建期需要的 reading-time 与 LQIP 插件。`server/` 在 `cms/vite.config.ts` 里整体外部化，由 **Node 原生加载**，因此插件是 `.ts` 就要靠 Node 的类型擦除（**Node ≥ 22.18**）与 import 里的显式 `.ts` 扩展名。
 - **代码块**：使用官方 **Expressive Code**（`rehype-expressive-code`）渲染，配置与博客共用根目录 `ec.config.mjs`（折叠 / 行号插件、`defaultProps` 与中文文案），通过 `customCreateRenderer` 复用同一个渲染器（shiki 主题只加载一次）；主题与开关取自 `src/config.ts` 的 `siteConfig.expressiveCode`（用 `config-file.mjs` 的 `readConfig()` 解析，按文件 mtime 缓存，改完配置无需重启 CMS），`enable: false` 时预览退化为纯文本代码块（与博客关闭语法高亮一致）；`/api/preview` 的 `lang` 字段用于让代码块内的界面文案跟随文章语言。样式与复制 / 折叠脚本由 EC 随代码块内联注入，无需在 `prose.css` 中重复实现。
 
 ## API 一览
@@ -102,7 +102,8 @@ cms/
 | `!!内容!!` | 折叠内容（hover 显示） |
 | `==内容==` | 彩虹文字 |
 | `++内容++` | 下划线 |
-| `![标题图片](./cover.jpg)` | 图片 + figure 标题（`title` 属性作为 figcaption） |
+| `![描述](./cover.jpg "图注")` | 图片 + figure 标题（`title` 属性作为 figcaption） |
+| `:::collage{columns=3}` + 每张图片各占一段 + `:::` | 手动拼图，每行 2–4 张；不受自动拼图开关影响；博客窄屏逐张显示，CMS 预览固定显示桌面排版 |
 | ` ```js title="a.js" {3} ins={4} collapse={6-9} showLineNumbers ` | Expressive Code 代码块（标题栏 / 行高亮 / diff / 行号 / 折叠 / 换行 / 终端窗口） |
 
 ## 注意事项
