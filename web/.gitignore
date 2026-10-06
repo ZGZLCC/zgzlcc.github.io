@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.npm-cache/
+*.local
+.DS_Store
+
+# Wrangler 本地状态与本地密钥：绝不能提交
+.wrangler/
+**/.wrangler/
+.dev.vars
+**/.dev.vars

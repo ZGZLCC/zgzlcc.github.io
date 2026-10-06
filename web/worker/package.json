@@ -1,0 +1,16 @@
+{
+  "name": "time-sync-worker",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "schema:local": "wrangler d1 execute time-sync --local --file=schema.sql",
+    "schema:remote": "wrangler d1 execute time-sync --remote --file=schema.sql"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250109.0",
+    "wrangler": "^4.0.0"
+  }
+}

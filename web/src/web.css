@@ -1,0 +1,40 @@
+/* Web 版新增与替换的界面样式；沿用设计规范的间距、圆角与颜色变量。 */
+
+/* 设置页的操作按钮并排一行，共同铺满卡片内容宽度。 */
+.backup-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/*
+ * 等分整行宽度。按钮变体自带不同的内边距与最小宽度，会让较宽的那个撑开，
+ * 这里统一水平内边距并允许收缩，保证同一行里每个按钮完全等宽。
+ */
+.backup-actions .button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-inline: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.field-stack {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.field-stack .field input {
+  width: 100%;
+}
+
+.week-export-hint {
+  margin: 4px 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}

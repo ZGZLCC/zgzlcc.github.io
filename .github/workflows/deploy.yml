@@ -35,6 +35,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       
+      # Time 网站版是独立的 npm 项目，需要单独安装依赖后再由 pnpm build 一并构建
+      - name: Setup Node.js for web
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        run: npm --prefix web ci
+
       - name: Build
         run: pnpm build
 

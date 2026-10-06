@@ -1,0 +1,26 @@
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #eef2f5;
+  --canvas: #12161a;
+  --panel: #1c2228;
+  --muted: #b2bdc6;
+  --line: #3d4852;
+  --surface: #252d35;
+  --field-border: #64727d;
+  --hover: #303b45;
+  --button: #29323a;
+  --button-hover: #34404a;
+  --danger: #ff958b;
+  --danger-hover: #3b282a;
+  --track-line: #303b45;
+  --detail-border: #86b6ff;
+  --event-hover-filter: brightness(1.12);
+  --tag-work: #84b3ff;
+  --tag-leisure: #ffa37c;
+  --tag-sleep: #b995ff;
+  --tag-other: #c4d0dc;
+  --tag-work-bg: #213349;
+  --tag-leisure-bg: #40302b;
+  --tag-sleep-bg: #352a49;
+  --tag-other-bg: #313b44;
+}

@@ -1,0 +1,50 @@
+.settings-page {
+  display: grid;
+  gap: 16px;
+}
+
+.settings-heading h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.settings-card h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.settings-card > p:not(.folder-message) {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.theme-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.theme-option {
+  border-color: var(--field-border);
+  color: var(--ink);
+  background: var(--panel);
+}
+
+.theme-option:hover {
+  background: var(--hover);
+}
+
+.theme-option.selected {
+  border-color: var(--ink);
+  background: var(--surface);
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .theme-options {
+    grid-template-columns: 1fr;
+  }
+}

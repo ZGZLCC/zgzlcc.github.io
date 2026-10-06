@@ -1,0 +1,30 @@
+.date-jump {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.date-jump-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.date-jump-field input {
+  min-height: 36px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--ink);
+  background: var(--panel);
+  font: inherit;
+}
+
+.date-jump-reset {
+  white-space: nowrap;
+}

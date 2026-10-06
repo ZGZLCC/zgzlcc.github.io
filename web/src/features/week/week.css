@@ -1,0 +1,198 @@
+.brand-copy {
+  min-width: 0;
+}
+
+.app-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.app-nav-button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.app-nav-button:hover,
+.app-nav-button.active {
+  color: var(--ink);
+}
+
+.app-nav-button.active {
+  border-bottom-color: var(--ink);
+}
+
+.week-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.week-page > .panel {
+  min-width: 0;
+}
+
+.week-page .page-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.week-page .page-status-error {
+  color: var(--danger);
+}
+
+.week-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.week-toolbar-heading h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.week-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.week-arrow {
+  min-width: 38px;
+  font-size: 18px;
+}
+
+.pending-link {
+  white-space: nowrap;
+}
+
+.week-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.week-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.week-stat-item strong {
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.week-export {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.week-export h3 {
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.folder-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.folder-controls input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--field-border);
+  border-radius: 4px;
+  color: var(--ink);
+  background: var(--panel);
+}
+
+.folder-controls .button {
+  height: 40px;
+  white-space: nowrap;
+}
+
+.folder-message {
+  margin: 8px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.status-error {
+  color: var(--danger);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.week-detail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-left: 3px solid var(--detail-border);
+}
+
+.week-detail:focus {
+  outline: 2px solid var(--tag-work);
+  outline-offset: 2px;
+}
+
+.week-detail-copy {
+  min-width: 0;
+}
+
+.week-detail-copy h2 {
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.week-detail-content {
+  margin: 8px 0 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.week-detail-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 12px;
+}
