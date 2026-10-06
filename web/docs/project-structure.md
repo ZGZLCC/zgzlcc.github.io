@@ -116,7 +116,7 @@ web/
 | `package.json` | npm 命令：开发服务器、预览、类型检查、纯函数检查、产物检查、浏览器实测、验证与生产构建。 |
 | `package-lock.json` | 锁定 npm 依赖。 |
 | `tsconfig.json` | 严格检查 `src/` 中的 TypeScript 与 Vue 文件，启用 `noUnusedLocals` 与 `verbatimModuleSyntax`。 |
-| `vite.config.mjs` | 相对路径 `base`、ES2022 构建目标与 `dist` 输出配置。 |
+| `vite.config.mjs` | `base: "/time/"`（站点发布在子目录）、ES2022 构建目标、`dist` 输出，以及通过 `define` 注入同步服务地址 `__TIME_SYNC_ENDPOINT__`，让用户端只填同步码。 |
 | `public/icon.svg` | 黑色圆环、蓝色时针的图标原稿，同时用于页面顶部标识与站点图标。 |
 | `scripts/ts-resolve.mjs` | Node 运行 TypeScript 源码时补全无扩展名相对导入，使 `src` 保持与 Vite 一致的写法。 |
 | `scripts/core.test.mjs` | 检查校验、重叠、周区间裁剪、分类汇总、记录编号、时间戳比较与备份字段解析。 |
@@ -127,7 +127,8 @@ web/
 | `scripts/time.test.mjs` | 检查北京时间转换、日期边界、整分钟时长显示、闰日与跨年周跳转及标题格式。 |
 | `scripts/day-range.test.mjs` | 检查北京时间单日区间、跨 UTC 日界的日期归属、跨午夜记录归属与空日期不过滤。 |
 | `scripts/dist.test.mjs` | 检查构建产物存在、资源引用为相对路径、不含桌面版依赖且包含 IndexedDB 实现。 |
-| `scripts/browser-check.mjs` | 用 CDP 驱动无头 Edge／Chrome 实测页面：自行启停静态服务与假 Worker，走完记录、周视图、导出、备份恢复与云端同步链路，并逐项打印结果。 |
+| `scripts/browser-check.mjs` | 用 CDP 驱动无头 Edge／Chrome 实测页面：自行启停静态服务与假 Worker，走完记录、周视图、导出、备份恢复与云端同步链路，并用视口模拟在 375／390／360 三种手机宽度下检查横向溢出、点击目标尺寸与按钮换行，逐项打印结果。 |
+| `scripts/ensure-ps1-bom.mjs` | 给 PowerShell 脚本补 UTF-8 BOM 并调用 PowerShell 解析器做语法检查；Windows PowerShell 5.1 缺少 BOM 时会按系统代码页读取，中文注释会导致语法报错。 |
 | `docs/AGENTS.md` | 本目录的开发、验证与文档维护规范。 |
 | `docs/DESIGN-webflow.md` | 前端视觉规范，包括配色、字体、间距、圆角、组件与响应式规则。 |
 | `docs/cloudflare-setup.md` | 云端同步的 Cloudflare 开通与部署步骤、口令处理与额度说明。 |
@@ -194,14 +195,14 @@ web/
 | `src/style.css` | 全局字体、重置、页面布局、亮色设计变量和通用按钮样式。 |
 | `src/theme.ts` | 读取与保存主题选择，跟踪系统外观变化并应用亮暗主题。 |
 | `src/theme.css` | 暗色主题的画布、卡片、表单、边框、文字和标签设计变量。 |
-| `src/web.css` | 网站版新增的操作按钮同行布局、表单堆叠与导出提示样式。 |
+| `src/web.css` | 网站版新增的操作按钮同行布局（窄屏换行成每行两个）、表单堆叠与导出提示样式。 |
 | `src/components/BackupReminder.vue` | 居中的备份提醒弹窗：距上次同步或上次导出超过 7 天时弹出，可跳到设置页导出或忽略当天；未配置云端同步时只看导出时间。 |
 | `src/components/DateJump.vue` | 复用“跳转日期”输入与可选“全部”按钮，向父组件抛出日期选择与恢复全部事件。 |
 | `src/components/date-jump.css` | 跳转日期标签、日期输入和恢复按钮的对齐与控件样式。 |
 | `src/features/records/RecordsPage.vue` | 页面状态协调：读取记录、独立开始时间打卡、常驻手动表单、保存、居中删除确认、错误反馈、保存后触发同步，并在数据变化时重新读取。 |
 | `src/features/records/RecordForm.vue` | 分开的日期与时间输入、同日默认、可缺字段草稿、标签按钮及编辑补全。 |
 | `src/features/records/RecordList.vue` | 待补全记录以固定宽度占位符显示起止时间；历史默认显示全部已完成记录并带日期标题，最多完整显示五条，可按日期跳转筛选并恢复全部。 |
-| `src/features/records/records.css` | 记录列表与表单样式、历史单行时间、标签配色、焦点状态和响应式规则。 |
+| `src/features/records/records.css` | 记录列表与表单样式、历史单行时间（窄屏隐藏日期前缀）、标签配色、焦点状态和响应式规则。 |
 | `src/features/records/records-layout.css` | 记录页卡片与历史布局、滚动窗口、历史标题栏的跳转日期控件、全宽标签按钮和居中确认框。 |
 | `src/features/week/WeekPage.vue` | 周导航与统计协调；切换周或跳转日期时重新读取该日统计；点击时间块后滚动并聚焦到记录详情。 |
 | `src/features/week/WeekGrid.vue` | 随窗口宽度适配的七天 00:00–24:00 时间轴、跨日记录片段与图片导出入口。 |

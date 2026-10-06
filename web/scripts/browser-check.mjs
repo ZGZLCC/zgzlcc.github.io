@@ -12,7 +12,7 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { connect } from "node:net";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { startMockWorker } from "./mock-worker.mjs";
 
@@ -406,28 +406,52 @@ function dialogLooksRight(measured) {
   return measured.centered && measured.backdrop !== "rgba(0, 0, 0, 0)" && measured.border === "1px";
 }
 
-/** 量每一组操作按钮：是否并排在同一行、等宽、共同铺满整行。 */
+/** 量每一组操作按钮：按行分组，给出每行的等宽与铺满情况。 */
 async function measureButtonRows() {
   return evaluate(`(() => {
     return [...document.querySelectorAll('.backup-actions')].map((row) => {
       const rowBox = row.getBoundingClientRect();
       const buttons = [...row.querySelectorAll('.button')];
       const boxes = buttons.map((button) => button.getBoundingClientRect());
-      const tops = boxes.map((box) => Math.round(box.top));
+      // 按 top 分组得到实际渲染出来的每一行
+      const lines = [];
+      boxes.forEach((box, index) => {
+        const top = Math.round(box.top);
+        const line = lines.find((item) => Math.abs(item.top - top) <= 2);
+        if (line) line.indexes.push(index);
+        else lines.push({ top, indexes: [index] });
+      });
+      const linesInfo = lines.map((line) => {
+        const lineBoxes = line.indexes.map((index) => boxes[index]);
+        const widths = lineBoxes.map((box) => Math.round(box.width));
+        const total = lineBoxes.reduce((sum, box) => sum + box.width, 0);
+        return {
+          labels: line.indexes.map((index) => buttons[index].textContent.trim()),
+          widths,
+          equalWidth: new Set(widths).size === 1,
+          spansToEdges: Math.abs(lineBoxes[0].left - rowBox.left) <= 1 &&
+            Math.abs(rowBox.right - lineBoxes[lineBoxes.length - 1].right) <= 1,
+          fillsRow: Math.abs(total + 8 * (lineBoxes.length - 1) - rowBox.width) <= 2,
+        };
+      });
       const widths = boxes.map((box) => Math.round(box.width));
-      const total = boxes.reduce((sum, box) => sum + box.width, 0);
       return {
         labels: buttons.map((button) => button.textContent.trim()),
         count: buttons.length,
         /** 按钮变体类，用于确认同一行里没有混用不同颜色的样式。 */
         variants: [...new Set(buttons.map((button) => [...button.classList].filter((name) => name.startsWith("button-")).join("+")))],
-        sameLine: new Set(tops).size === 1,
+        lineCount: lines.length,
+        lines: linesInfo,
+        /** 每行最多几个按钮，窄屏应当不大于 2。 */
+        maxPerLine: Math.max(...linesInfo.map((line) => line.widths.length), 0),
+        sameLine: new Set(boxes.map((box) => Math.round(box.top))).size === 1,
+        wraps: lines.length > 1,
         equalWidth: new Set(widths).size === 1,
         spansToEdges: boxes.length > 0 &&
           Math.abs(boxes[0].left - rowBox.left) <= 1 &&
           Math.abs(rowBox.right - boxes[boxes.length - 1].right) <= 1,
         // 按钮总宽加间距应当约等于整行宽度
-        fillsRow: Math.abs(total + 8 * (boxes.length - 1) - rowBox.width) <= 2,
+        fillsRow: Math.abs(widths.reduce((sum, value) => sum + value, 0) + 8 * (boxes.length - 1) - rowBox.width) <= 2,
         widths,
       };
     });
@@ -512,18 +536,79 @@ async function waitForDownload(predicate, description, timeoutMs = 15000) {
   }
 }
 
-/** 点击按钮后等待浏览器确认下载开始，拿到落盘文件名。 */
+/**
+ * 点击按钮后等待浏览器确认下载开始，拿到落盘文件名。
+ *
+ * 必须用 clickRect 发真实鼠标事件：下载需要用户手势，普通 DOM click() 触发的
+ * link.click() 会被浏览器丢弃，控件自己的成功提示却照常显示，很难查。
+ */
+/** 下载诊断：clickAndCaptureDownload 执行期间收集 CDP 的下载事件。 */
+let downloadListener = null;
+
+/**
+ * 点击按钮后等待下载落盘，返回文件名与内容。
+ *
+ * 两个坑：
+ *   1. 必须用 clickRect 发真实鼠标事件——下载需要用户手势，普通 DOM click()
+ *      触发的 link.click() 会被浏览器丢弃，而控件自己的成功提示照常显示；
+ *   2. 不能用「文件内容变了」判断完成：导出结果本来就该是可复现的，内容完全相同
+ *      时那个判据永远不成立。这里改为等 CDP 的 completed 事件，再按文件名读盘。
+ */
 async function clickAndCaptureDownload(selector, text) {
-  const before = new Set(await downloadNames());
-  await clickByText(selector, text);
-  const deadline = Date.now() + 15000;
-  for (;;) {
-    const names = await downloadNames();
-    const added = names.filter((name) => !before.has(name));
-    if (added.length > 0) return added[0];
-    if (Date.now() > deadline) throw new Error("下载未开始");
-    await sleep(200);
+  const events = [];
+  const previous = downloadListener;
+  downloadListener = (event) => events.push(event);
+  try {
+    await clickRect(selector, text);
+    const deadline = Date.now() + 15000;
+    for (;;) {
+      const completed = findCompletedDownload(events, text);
+      if (completed) {
+        const bytes = await readFile(completed.path).catch(() => null);
+        if (bytes) return { name: completed.name, bytes };
+      }
+      if (Date.now() > deadline) {
+        const state = await evaluate(`(() => {
+          const button = [...document.querySelectorAll(${JSON.stringify(selector)})]
+            .find((node) => node.textContent.trim() === ${JSON.stringify(text)});
+          return {
+            view: document.querySelector('.app-nav-button.active')?.textContent ?? null,
+            hasButton: !!button,
+            disabled: button ? button.disabled : null,
+            message: document.querySelector('.folder-message')?.textContent.trim() ?? null,
+          };
+        })()`).catch((error) => ({ error: String(error) }));
+        throw new Error(
+          `下载未落盘：CDP 事件 [${events.join(" | ") || "无"}]；页面状态 ${JSON.stringify(state)}`,
+        );
+      }
+      await sleep(200);
+    }
+  } finally {
+    downloadListener = previous;
   }
+}
+
+/** 从 CDP 事件里挑出这次点击对应的已完成下载。 */
+function findCompletedDownload(events, displayName) {
+  const completed = events.filter(
+    (event) => event.startsWith("Browser.downloadProgress") && event.includes('"state":"completed"'),
+  );
+  for (const event of completed) {
+    try {
+      const payload = JSON.parse(event.slice(event.indexOf("{")));
+      const name = basename(payload.filePath ?? "");
+      if (name && payload.filePath) return { name, path: payload.filePath };
+    } catch {
+      // 事件解析失败就跳过，继续等下一个
+    }
+  }
+  return null;
+}
+
+/** 只要文件名的场景（既有用例沿用）。 */
+async function downloadName(selector, text) {
+  return (await clickAndCaptureDownload(selector, text)).name;
 }
 
 async function main() {
@@ -542,6 +627,12 @@ async function main() {
       "Browser.setDownloadBehavior",
       { behavior: "allow", downloadPath: DOWNLOAD_DIR, eventsEnabled: true },
     );
+    // 下载相关事件只用于失败诊断，不影响判定
+    session.client.listeners.add((message) => {
+      if (downloadListener && message.method?.startsWith("Browser.download")) {
+        downloadListener(`${message.method} ${JSON.stringify(message.params)}`);
+      }
+    });
 
     console.log(`\n=== 页面：${URL_UNDER_TEST} ===`);
     await session.client.send("Page.navigate", { url: URL_UNDER_TEST }, session.sessionId);
@@ -765,8 +856,9 @@ async function main() {
     );
 
     // 7. PNG 导出（画布 + 下载）
-    const pngName = await clickAndCaptureDownload(".week-export .button-primary", "导出图片");
-    const pngBytes = await readFile(join(DOWNLOAD_DIR, pngName));
+    const lightPng = await clickAndCaptureDownload(".week-export .button-primary", "导出图片");
+    const pngName = lightPng.name;
+    const pngBytes = lightPng.bytes;
     const pngHeader = pngBytes.subarray(0, 8).toString("latin1");
     check(
       "周记录 PNG 导出为真实图片文件",
@@ -788,6 +880,26 @@ async function main() {
       "document.documentElement.dataset.theme === 'dark' && localStorage.getItem('timeweb-theme') === 'dark'",
     );
     check("暗色主题即时生效且刷新后保持", darkApplied && darkAfterReload);
+
+    /*
+     * 导出必须与主题无关。
+     * 原来配色是从 CSS 变量读的，暗色下导出的是另一套颜色，同一次导出结果不同。
+     * 这里在暗色主题下再导一次，和亮色那次逐字节比对。
+     */
+    await clickByText(".app-nav-button", "周视图");
+    await waitFor("!!document.querySelector('.week-export')", "暗色下回到周视图");
+    const darkPng = await clickAndCaptureDownload(".week-export .button-primary", "导出图片");
+    const darkPngBytes = darkPng.bytes;
+    check(
+      "导出图片与主题无关，两次结果一致",
+      darkPngBytes.equals(pngBytes),
+      darkPngBytes.equals(pngBytes)
+        ? `两次都是 ${darkPngBytes.length} 字节，字节完全相同`
+        : `亮色 ${pngBytes.length} 字节 vs 暗色 ${darkPngBytes.length} 字节，内容不同`,
+    );
+
+    await clickByText(".app-nav-button", "设置");
+    await waitFor("!!document.querySelector('.settings-page')", "回到设置页");
 
     // 概览是异步读出来的，先等它出现内容再断言，避免读到加载中的占位文案
     const overviewSelector = "#storage-title ~ p.folder-message:not(.status-error)";
@@ -815,8 +927,9 @@ async function main() {
     );
 
     // 9. JSON 备份导出
-    const backupName = await clickAndCaptureDownload(".backup-actions .button", "导出备份");
-    const backup = JSON.parse(await readFile(join(DOWNLOAD_DIR, backupName), "utf8"));
+    const backupFile = await clickAndCaptureDownload(".backup-actions .button", "导出备份");
+    const backupName = backupFile.name;
+    const backup = JSON.parse(backupFile.bytes.toString("utf8"));
     check(
       "JSON 备份包含格式标识、版本与全部记录",
       /^TimeBackup_2026\d{4}_\d{4}\.json$/.test(backupName) &&
@@ -946,13 +1059,24 @@ async function main() {
     );
 
     // 14. 配置云端同步并把本地记录推送到假 Worker
+    // 构建时内置了真实服务地址，这里先把配置写成假 Worker 再刷新，
+    // 免得实测打到线上；同时验证「地址非空时不显示地址输入框」。
+    await evaluate(
+      `localStorage.setItem('timeweb-sync', JSON.stringify({ endpoint: ${JSON.stringify(mock.endpoint)}, code: '' }))`,
+    );
+    await session.client.send("Page.reload", {}, session.sessionId);
+    await waitFor("!!document.querySelector('.punch-panel')", "刷新后记录页渲染完成");
     await clickByText(".app-nav-button", "设置");
     await waitFor("!!document.querySelector('#cloud-title')", "云端同步卡片渲染");
-    // 未注入构建地址时设置页会同时显示服务地址与同步码两个输入框
     const syncFields = await evaluate(`(() => {
       const card = document.querySelector('#cloud-title').parentElement;
       return [...card.querySelectorAll('input')].map((input) => input.previousElementSibling?.textContent.trim() ?? input.type);
     })()`);
+    check(
+      "内置同步服务地址后不再显示地址输入框",
+      syncFields.length === 1 && syncFields[0] === "同步码",
+      `字段：${syncFields.join("/")}`,
+    );
     await evaluate(`(() => {
       const setValue = (target, value) => {
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(target, value);
@@ -961,8 +1085,8 @@ async function main() {
       const card = document.querySelector('#cloud-title').parentElement;
       const inputs = [...card.querySelectorAll('input')];
       const byLabel = (label) => inputs.find((input) => input.previousElementSibling?.textContent.trim() === label);
-      setValue(byLabel('同步服务地址') ?? inputs[0], ${JSON.stringify(mock.endpoint)});
-      setValue(byLabel('同步码') ?? inputs[inputs.length - 1], ${JSON.stringify(mock.code)});
+      const codeInput = byLabel('同步码') ?? inputs[inputs.length - 1];
+      setValue(codeInput, ${JSON.stringify(mock.code)});
       return true;
     })()`);
     await clickByText("#cloud-title ~ .backup-actions .button", "保存配置");
@@ -977,12 +1101,11 @@ async function main() {
     );
     const storedSync = await evaluate("localStorage.getItem('timeweb-sync')");
     check(
-      "设置页显示位置与同步码字段，配置保存在本机",
-      syncFields.includes("同步码") &&
-        typeof storedSync === "string" &&
+      "同步配置保存在本机",
+      typeof storedSync === "string" &&
         storedSync.includes(mock.endpoint) &&
         storedSync.includes(mock.code),
-      `字段：${syncFields.join("/")}；已保存=${storedSync !== null}`,
+      `已保存=${storedSync !== null}`,
     );
 
     // 15. 清空浏览器本地数据后从云端恢复
@@ -1054,6 +1177,9 @@ async function main() {
         pulledBack.title?.includes(`${recordDate} 09:00 → ${recordDate} 10:30`),
       `${pulledBack.title} / ${pulledBack.content}`,
     );
+
+    // 16. 移动端：窄屏下不横向溢出、点击目标够大、按钮换行等宽
+    await runMobileChecks();
   } finally {
     session?.client.close();
     child.kill();
@@ -1069,6 +1195,180 @@ async function main() {
     process.exitCode = 1;
   }
   await writeFile(join(tmpdir(), "timeweb-browser-check.json"), JSON.stringify({ url: URL_UNDER_TEST, results }, null, 2)).catch(() => {});
+}
+
+/**
+ * 移动端检查：逐个视口遍历三个页面，页面级横向溢出与过小的点击目标都会被抓出来。
+ * 用 CDP 的 setDeviceMetricsOverride 模拟，而不是改窗口大小——窗口最小宽度
+ * 达不到 360px，仅靠 --window-size 测不出窄屏问题。
+ */
+async function setViewport(width, height) {
+  await session.client.send(
+    "Emulation.setDeviceMetricsOverride",
+    { width, height, deviceScaleFactor: 1, mobile: true },
+    session.sessionId,
+  );
+  await sleep(150);
+}
+
+/** 页面级横向溢出，以及溢出视口右边界的具体元素（含父链宽度，便于定位是谁撑开的）。 */
+function overflowProbe() {
+  return `(() => {
+    const doc = document.documentElement;
+    const width = window.innerWidth;
+    const offenders = [];
+    for (const node of document.querySelectorAll('body *')) {
+      const rect = node.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) continue;
+      if (rect.right > width + 1 || rect.left < -1) {
+        const tag = node.tagName.toLowerCase();
+        const cls = typeof node.className === 'string' ? node.className.split(' ')[0] : '';
+        const chain = [];
+        for (let parent = node.parentElement; parent && chain.length < 3; parent = parent.parentElement) {
+          const pcls = typeof parent.className === 'string' ? parent.className.split(' ')[0] : '';
+          chain.push(parent.tagName.toLowerCase() + (pcls ? '.' + pcls : '') + '=' + Math.round(parent.getBoundingClientRect().width));
+        }
+        offenders.push(tag + (cls ? '.' + cls : '') + ' w=' + Math.round(rect.width) +
+          ' [' + Math.round(rect.left) + '..' + Math.round(rect.right) + '] ← ' + chain.join(' < '));
+      }
+    }
+    return {
+      innerWidth: width,
+      scrollWidth: doc.scrollWidth,
+      bodyScrollWidth: document.body.scrollWidth,
+      horizontallyScrollable: doc.scrollWidth > width + 1,
+      offenders: offenders.slice(0, 4),
+    };
+  })()`;
+}
+
+/** 点击目标尺寸：返回小于给定边长的可见按钮。 */
+function smallTargetProbe(minSize) {
+  return `(() => {
+    const small = [];
+    for (const node of document.querySelectorAll('button, input[type=date], input[type=text], input[type=url], a[href]')) {
+      const rect = node.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) continue;
+      const style = getComputedStyle(node);
+      if (style.visibility === 'hidden' || style.display === 'none') continue;
+      if (rect.height < ${minSize} || rect.width < 24) {
+        const label = (node.getAttribute('aria-label') || node.textContent || node.type || '').trim().slice(0, 12);
+        small.push(label + ' ' + Math.round(rect.width) + 'x' + Math.round(rect.height));
+      }
+    }
+    return small;
+  })()`;
+}
+
+async function runMobileChecks() {
+  const viewports = [
+    { name: "iPhone SE", width: 375, height: 667 },
+    { name: "iPhone 14", width: 390, height: 844 },
+    { name: "安卓常见", width: 360, height: 800 },
+  ];
+  const pages = [
+    { name: "记录", nav: "记录" },
+    { name: "周视图", nav: "周视图" },
+    { name: "设置", nav: "设置" },
+  ];
+
+  for (const viewport of viewports) {
+    await setViewport(viewport.width, viewport.height);
+    for (const page of pages) {
+      await clickByText(".app-nav-button", page.nav);
+      await sleep(250);
+      const overflow = await evaluate(overflowProbe());
+      // 关键：和「设定的视口宽度」比，而不是和 scrollWidth 自己比。
+      // 设置页曾经把文档撑到 424px，拿 scrollWidth 比会误报通过。
+      check(
+        `移动端 ${viewport.width}px · ${page.name} 页不横向溢出`,
+        overflow.scrollWidth <= viewport.width + 1,
+        `scrollWidth ${overflow.scrollWidth} / 视口 ${viewport.width}` +
+          (overflow.offenders.length > 0 ? `；越界元素 ${overflow.offenders.join("；")}` : ""),
+      );
+    }
+  }
+
+  // 触摸目标：回到 360px 最窄视口逐个量
+  await setViewport(360, 800);
+  for (const page of pages) {
+    await clickByText(".app-nav-button", page.nav);
+    await sleep(250);
+    const small = await evaluate(smallTargetProbe(32));
+    check(
+      `移动端 360px · ${page.name} 页点击目标不小于 32px`,
+      small.length === 0,
+      small.length === 0 ? "全部达标" : `过小：${small.slice(0, 4).join("、")}`,
+    );
+  }
+
+  // 设置页：内置了服务地址，用户端只该看到同步码一个输入框
+  const syncFields = await evaluate(`(() => {
+    const card = document.querySelector('#cloud-title')?.parentElement;
+    if (!card) return null;
+    return [...card.querySelectorAll('input')].map((input) => input.previousElementSibling?.textContent.trim() ?? input.type);
+  })()`);
+  check(
+    "内置同步服务地址后设置页只显示同步码",
+    Array.isArray(syncFields) && syncFields.length === 1 && syncFields[0] === "同步码",
+    `字段：${(syncFields ?? []).join("/")}`,
+  );
+
+  // 窄屏按钮：换行成每行两个，每行内部仍等宽铺满
+  const narrowRows = await measureButtonRows();
+  const narrowOk =
+    narrowRows.length >= 2 &&
+    narrowRows.every(
+      (row) =>
+        row.maxPerLine <= 2 &&
+        row.lines.every((line) => line.equalWidth && line.spansToEdges && line.fillsRow),
+    );
+  check(
+    "移动端设置页按钮换行成每行两个且等宽铺满",
+    narrowOk,
+    narrowRows
+      .map((row) => row.lines.map((line) => `${line.labels.join("/")} ${line.widths.join("+")}px`).join(" | "))
+      .join("；"),
+  );
+
+  // 记录页的历史卡片曾经被 nowrap 的时间文本撑出容器（317px 的卡片算成 404px），
+  // 这里额外确认卡片内部的盒子确实贴合容器宽度，而不只是页面整体没滚动。
+  await clickByText(".app-nav-button", "记录");
+  await sleep(250);
+  const cardFit = await evaluate(`(() => {
+    const scroller = document.querySelector('.history-scroll');
+    const card = document.querySelector('.record-card');
+    if (!scroller || !card) return { ok: true, note: '没有历史卡片，跳过' };
+    return {
+      ok: scroller.scrollWidth <= scroller.clientWidth + 1 && card.scrollWidth <= card.clientWidth + 1,
+      note: 'history-scroll ' + scroller.clientWidth + '/' + scroller.scrollWidth +
+        '，record-card ' + card.clientWidth + '/' + card.scrollWidth,
+    };
+  })()`);
+  check("移动端历史卡片贴合容器不撑开", cardFit.ok, cardFit.note);
+
+  /*
+   * 手机上一列只有 40 多像素，时间块里的文字会被压成竖排单字。
+   * 窄屏应当只保留分类颜色，文字不显示；颜色靠左边框体现，必须还在。
+   */
+  await clickByText(".app-nav-button", "周视图");
+  await sleep(250);
+  const blockInMobile = await evaluate(`(() => {
+    const block = document.querySelector('.timeline-event');
+    if (!block) return { ok: false, note: '没有时间块' };
+    const span = block.querySelector('span');
+    const hidden = !span || getComputedStyle(span).display === 'none';
+    const borderColor = getComputedStyle(block).borderLeftColor;
+    const sized = block.getBoundingClientRect().height > 0 && block.getBoundingClientRect().width > 0;
+    return {
+      ok: hidden && sized && borderColor !== 'rgba(0, 0, 0, 0)',
+      note: '文字隐藏=' + hidden + '，颜色=' + borderColor + '，尺寸=' +
+        Math.round(block.getBoundingClientRect().width) + 'x' + Math.round(block.getBoundingClientRect().height),
+    };
+  })()`);
+  check("移动端周视图时间块只留颜色不显示文字", blockInMobile.ok, blockInMobile.note);
+
+  await setViewport(1280, 900);
 }
 
 await main();

@@ -67,12 +67,25 @@ export function isInSync(local: TimeEntry[], remote: TimeEntry[]): boolean {
   return local.every((entry) => remoteById.get(entry.id)?.updatedAt === entry.updatedAt);
 }
 
-const TOMBSTONE_TTL_MS = 180 * 86_400_000;
+/**
+ * 删除墓碑的保留期。
+ *
+ * 墓碑的用处是让离线很久的设备同步到「这条被删了」；超过这个窗口才算安全删除。
+ * 两端的清理都必须用同一个值：网页端真正从 IndexedDB 删，Worker 端从云端快照里删。
+ * 只在一端删而另一端留着，会出现「删掉的记录被另一端的旧副本推回来」。
+ */
+export const TOMBSTONE_TTL_MS = 180 * 86_400_000;
 
 /**
- * 清理长期保留的删除墓碑，避免墓碑无限增长。
- * 超过保留期的墓碑在两端都已同步过，删除不会再造成记录复活。
+ * 过滤掉超过保留期的墓碑，用于同步前的比较。
+ * 注意这只是过滤返回值，真正删除记录请调用仓储的 purgeTombstones——
+ * 以前只调用这个函数，导致墓碑在库里无限累积。
  */
 export function pruneTombstones(entries: TimeEntry[], now: number): TimeEntry[] {
   return entries.filter((entry) => entry.deletedAt === null || now - entry.deletedAt < TOMBSTONE_TTL_MS);
+}
+
+/** 两条记录是否都已过期到可以删除。 */
+export function isExpiredTombstone(entry: TimeEntry, now: number): boolean {
+  return entry.deletedAt !== null && now - entry.deletedAt >= TOMBSTONE_TTL_MS;
 }

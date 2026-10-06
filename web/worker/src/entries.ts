@@ -28,23 +28,22 @@ export function normalizeEntry(raw: unknown): TimeEntry | null {
   };
 }
 
-/** 数据库行转回记录；字段缺失或非法时返回 null，由调用方过滤。 */
-export function rowToEntry(row: Record<string, unknown>): TimeEntry | null {
-  if (typeof row.id !== "string" || row.id === "") return null;
-  if (row.state !== "completed" && row.state !== "draft") return null;
-  if (!isNumber(row.start_ms) && row.start_ms !== null) return null;
-  return {
-    id: row.id,
-    startMs: row.start_ms === null ? null : (row.start_ms as number),
-    endMs: row.end_ms === null ? null : (row.end_ms as number),
-    startDate: typeof row.start_date === "string" ? row.start_date : null,
-    endDate: typeof row.end_date === "string" ? row.end_date : null,
-    content: typeof row.content === "string" ? row.content : "",
-    tag: readTag(row.tag),
-    state: row.state,
-    updatedAt: isNumber(row.updated_at) ? row.updated_at : 0,
-    deletedAt: row.deleted_at === null ? null : isNumber(row.deleted_at) ? row.deleted_at : null,
-  };
+/**
+ * 删除墓碑的保留期，必须与网页端 `src/core/sync.ts` 的 TOMBSTONE_TTL_MS 一致。
+ *
+ * 墓碑在保留期内必须留着：离线很久的设备重新联网时，要靠它知道自己删过什么，
+ * 否则那台设备的旧副本会把已删记录推回来。超过保留期才算安全。
+ */
+export const TOMBSTONE_TTL_MS = 180 * 86_400_000;
+
+/**
+ * 丢掉超过保留期的删除墓碑，避免云端无限累积。
+ *
+ * 只在写入时清理；GET 返回完整快照，让任何设备都能拿到自己需要的墓碑。
+ * 以前两端都没有真正删除墓碑（只过滤返回值），墓碑会一直堆在 KV 里。
+ */
+export function pruneTombstones(entries: TimeEntry[], now: number): TimeEntry[] {
+  return entries.filter((entry) => entry.deletedAt === null || now - entry.deletedAt < TOMBSTONE_TTL_MS);
 }
 
 /**
@@ -62,10 +61,6 @@ export function mergeEntries(incoming: TimeEntry[], existing: TimeEntry[]): Time
       (right.startMs ?? right.endMs ?? Number.NEGATIVE_INFINITY) -
         (left.startMs ?? left.endMs ?? Number.NEGATIVE_INFINITY) || left.id.localeCompare(right.id),
   );
-}
-
-function readTag(value: unknown): TimeEntry["tag"] {
-  return value === "work" || value === "leisure" || value === "sleep" || value === "other" ? value : null;
 }
 
 function isNumber(value: unknown): value is number {

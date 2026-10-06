@@ -1,5 +1,5 @@
 import type { TimeEntry } from "../../src/core/entries";
-import { mergeEntries, normalizeEntry } from "./entries";
+import { mergeEntries, normalizeEntry, pruneTombstones } from "./entries";
 import { corsHeaders, isAdminAuthorized, json, readCode, type Env } from "./http";
 
 /** 单次请求体上限，避免异常客户端把整份数据撑爆。 */
@@ -134,7 +134,9 @@ async function handleEntries(request: Request, env: Env, cors: Record<string, st
 
   const incoming = await readIncoming(request);
   const stored = await readEntries(env, code);
-  const merged = mergeEntries(incoming, stored.entries);
+  // 写入时顺手丢掉过期墓碑：保留期内要留着让离线设备知道自己删过什么，
+  // 过期后就没用了，不清理会一直堆在 KV 里（以前两端都没真正删除过）。
+  const merged = pruneTombstones(mergeEntries(incoming, stored.entries), Date.now());
   if (merged.length > MAX_ENTRIES_PER_CODE) {
     throw new Error(`记录数超过单码上限 ${MAX_ENTRIES_PER_CODE} 条，请先导出备份并清理历史记录`);
   }

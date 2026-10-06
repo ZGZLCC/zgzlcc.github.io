@@ -21,8 +21,16 @@ export interface SyncSettings {
 const SETTINGS_KEY = "timeweb-sync";
 const LAST_SYNCED_KEY = "timeweb-synced-at";
 
-/** 构建时注入的同步服务地址；没有配置时用户需要自己填写。 */
-const BUILT_IN_ENDPOINT = (import.meta.env?.VITE_TIME_SYNC_ENDPOINT ?? "").trim();
+/**
+ * 构建时注入的同步服务地址，见 vite.config.mjs 的 define。
+ * 有内置地址时设置页只显示「同步码」一个输入框，用户不用关心服务地址。
+ */
+declare const __TIME_SYNC_ENDPOINT__: string | undefined;
+
+const BUILT_IN_ENDPOINT = (() => {
+  const injected = typeof __TIME_SYNC_ENDPOINT__ === "string" ? __TIME_SYNC_ENDPOINT__ : "";
+  return (injected || import.meta.env?.VITE_TIME_SYNC_ENDPOINT || "").trim();
+})();
 
 export function defaultEndpoint(): string {
   return BUILT_IN_ENDPOINT;

@@ -118,7 +118,6 @@
 .timeline-event span {
   display: block;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 @media (max-width: 900px) {
@@ -150,5 +149,18 @@
 
   .timeline-day-heading {
     font-size: 9px;
+  }
+
+  /*
+   * 手机上一列只有 40 多像素宽，时间块里的文字会被压成一列竖排的单字，既读不了
+   * 又难看。这一档直接不显示文字，只留分类颜色；点击后仍能在详情里看到内容，
+   * 按钮的 aria-label 也带着完整信息，屏幕阅读器不受影响。
+   */
+  .timeline-event span {
+    display: none;
+  }
+
+  .timeline-event {
+    padding: 0;
   }
 }

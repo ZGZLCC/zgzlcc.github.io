@@ -26,9 +26,16 @@ const selectedDate = ref("");
 const jumpDate = ref("");
 const dayEntries = computed(() => recordsOnDay(props.completed, selectedDate.value));
 
+/**
+ * 起止时间。未选日期时另给出日期前缀，便于在「全部」视图里区分是哪一天；
+ * 前缀单独成 span，窄屏可以隐藏——日期本来就在范围里，移动端不必显示两遍。
+ */
 function timeRange(entry: TimeEntry): string {
-  const range = `${displayTime(entry.startMs, entry.startDate)} → ${displayTime(entry.endMs, entry.endDate)}`;
-  return selectedDate.value ? range : `${toBeijingInput(entry.startMs!).slice(0, 10)} ${range}`;
+  return `${displayTime(entry.startMs, entry.startDate)} → ${displayTime(entry.endMs, entry.endDate)}`;
+}
+
+function datePrefix(entry: TimeEntry): string {
+  return selectedDate.value || entry.startMs === null ? "" : toBeijingInput(entry.startMs).slice(0, 10);
 }
 
 /** 与待补全一致：最多完整显示五条，其余在卡片内滚动。 */
@@ -100,7 +107,9 @@ onBeforeUnmount(() => window.removeEventListener("resize", sizeHistory));
         <article v-for="entry in dayEntries" :key="entry.id" class="record-card">
           <div class="record-main">
             <div class="record-title-row">
-              <h4 class="history-time">{{ timeRange(entry) }}</h4>
+              <h4 class="history-time">
+                <span v-if="datePrefix(entry)" class="history-date-prefix">{{ datePrefix(entry) }} </span>{{ timeRange(entry) }}
+              </h4>
               <span v-if="entry.tag" :class="`tag tag-${tagColor(entry.tag)}`">{{ tagLabel(entry.tag) }}</span>
             </div>
             <p class="history-content">{{ entry.content }}</p>

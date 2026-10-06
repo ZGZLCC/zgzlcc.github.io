@@ -193,17 +193,21 @@ cd web\worker
 默认放行这些来源：
 
 - `https://zgzlcc.github.io` —— 线上站点
+- `tauri://localhost`、`http://tauri.localhost`、`https://tauri.localhost` —— **Tauri 桌面版**，WebView 发出的 Origin 就是这几个
+- `http://localhost:1420`、`http://127.0.0.1:1420` —— Tauri 开发模式的 vite dev server
 - `http://localhost:4321`、`http://localhost:4322`（含 `127.0.0.1`）—— 相册站点的本地预览端口
 - `http://127.0.0.1:5180`、`http://127.0.0.1:5181`（含 `localhost`）—— 网站版自身的开发与预览端口
+
+**桌面版的来源必须放行**，否则会出现「网页版能同步、桌面版连不上」：WebView 发出的 `Origin` 不在白名单里时，响应缺少 `Access-Control-Allow-Origin`，浏览器会直接把响应丢掉，前端只看到一句 “Failed to fetch”，从现象上完全看不出是来源校验问题。
 
 换域名时在 `wrangler.toml` 里加：
 
 ```toml
 [vars]
-ALLOWED_ORIGINS = "https://zgzlcc.github.io,https://你的新域名"
+ALLOWED_ORIGINS = "https://zgzlcc.github.io,tauri://localhost,http://tauri.localhost,https://你的新域名"
 ```
 
-**一旦显式配置，上面的默认列表就整体失效**，本地调试地址也要一并写上。改完重新 `npx wrangler deploy`。
+**一旦显式配置，上面的默认列表就整体失效**，桌面版来源与本地调试地址都要一并写上。改完重新 `npx wrangler deploy`。
 
 ## 十、国内直连的限制
 

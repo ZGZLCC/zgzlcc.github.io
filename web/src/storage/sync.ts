@@ -90,6 +90,7 @@ export class SyncEngine {
         emitLocalDataChanged(true);
       }
       this.markSynced();
+      await this.purgeExpiredTombstones();
     } catch (error) {
       this.state.value = typeof navigator !== "undefined" && navigator.onLine === false ? "offline" : "error";
       this.message.value = messageOf(error, "同步失败");
@@ -102,6 +103,20 @@ export class SyncEngine {
     }
   }
 
+  /**
+   * 同步成功后顺手清掉过期墓碑。
+   *
+   * 必须在同步之后做：先清会导致「本地没有墓碑可推」，
+   * 而云端若也已清，别的设备的旧副本就能把记录推回来。
+   * 清理失败不影响同步结果，所以只吞掉错误。
+   */
+  private async purgeExpiredTombstones(): Promise<void> {
+    try {
+      await this.repository.purgeTombstones(Date.now());
+    } catch {
+      // 清不掉只是占一点空间，下次同步再试
+    }
+  }
   /** 只推送本地内容：用于首次把已有记录上传到云端。 */
   async push(): Promise<void> {
     if (!this.requireConfigured()) return;
@@ -113,6 +128,7 @@ export class SyncEngine {
       await this.repository.applyRemote(merged);
       emitLocalDataChanged(true);
       this.markSynced();
+      await this.purgeExpiredTombstones();
     } catch (error) {
       this.state.value = "error";
       this.message.value = messageOf(error, "上传失败");
@@ -129,6 +145,7 @@ export class SyncEngine {
       await this.repository.applyRemote(remoteEntries);
       emitLocalDataChanged(true);
       this.markSynced();
+      await this.purgeExpiredTombstones();
     } catch (error) {
       this.state.value = "error";
       this.message.value = messageOf(error, "恢复失败");

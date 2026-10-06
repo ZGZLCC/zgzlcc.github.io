@@ -18,8 +18,6 @@
   min-width: 0;
   padding-inline: 10px;
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .field-stack {
@@ -37,4 +35,20 @@
   color: var(--muted);
   font-size: 13px;
   line-height: 1.6;
+}
+
+/*
+ * 窄屏：四个按钮挤在一行时每个只剩 80 多 px，文字被省略号截断，
+ * 更糟的是按钮的最小宽度会把整页撑到 424px——实测 360px 视口出现横向滚动。
+ * 改为两列换行，每行两个、仍然等宽铺满。
+ */
+@media (max-width: 560px) {
+  .backup-actions {
+    flex-wrap: wrap;
+  }
+
+  .backup-actions .button {
+    flex: 1 1 calc(50% - 4px);
+    padding-inline: 8px;
+  }
 }

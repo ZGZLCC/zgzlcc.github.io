@@ -2,6 +2,7 @@ import { AppError } from "../core/errors";
 import { findOverlap } from "../core/overlap";
 import { validateEntry } from "../core/entry-validation";
 import type { SaveEntryInput, TimeEntry } from "../core/entries";
+import { TOMBSTONE_TTL_MS } from "../core/sync";
 import { isNewer, newEntryId, nowMs } from "../core/timestamp";
 import { withWriteLock } from "./mutex";
 import type { TimeRepository } from "./repository";
@@ -164,6 +165,34 @@ export class IndexedDbRepository implements TimeRepository {
       } catch (error) {
         if (error instanceof AppError) throw error;
         throw storageError("写入云端记录失败", error);
+      }
+    });
+  }
+
+  /**
+   * 真正删掉过期的删除墓碑。
+   *
+   * 以前只做了「过滤返回值」，数据库里的墓碑一条都没删，于是本地和云端都无限累积。
+   * 保留期内的墓碑必须留着：离线很久的设备要靠它知道自己删过什么，否则会被自己
+   * 的旧副本推回来。超过保留期才算安全。
+   */
+  async purgeTombstones(now: number): Promise<number> {
+    return withWriteLock(async () => {
+      try {
+        const db = await this.open();
+        const entries = await readAllEntries(db);
+        const expired = entries.filter(
+          (entry) => entry.deletedAt !== null && now - entry.deletedAt >= TOMBSTONE_TTL_MS,
+        );
+        if (expired.length === 0) return 0;
+        const transaction = db.transaction(ENTRY_STORE, "readwrite");
+        const store = transaction.objectStore(ENTRY_STORE);
+        for (const entry of expired) store.delete(entry.id);
+        await transactionDone(transaction);
+        return expired.length;
+      } catch (error) {
+        if (error instanceof AppError) throw error;
+        throw storageError("清理删除标记失败", error);
       }
     });
   }

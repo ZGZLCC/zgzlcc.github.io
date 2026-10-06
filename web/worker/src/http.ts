@@ -23,6 +23,14 @@ export function corsHeaders(origin: string, allowed?: string): Record<string, st
     .filter(Boolean);
   const defaults = [
     "https://zgzlcc.github.io",
+    // Tauri 桌面版：WebView 发出的 Origin 就是这几个，不放行的话浏览器会拦掉响应，
+    // 表现为「网页版能同步、桌面版连不上」。这与页面地址无关，是来源校验。
+    "tauri://localhost",
+    "http://tauri.localhost",
+    "https://tauri.localhost",
+    // Tauri 开发模式：vite dev server 的默认端口
+    "http://localhost:1420",
+    "http://127.0.0.1:1420",
     // 相册站点的 dev / preview 端口，本地整站联调时使用
     "http://localhost:4321",
     "http://localhost:4322",

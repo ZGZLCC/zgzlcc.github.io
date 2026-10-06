@@ -224,6 +224,54 @@ test("索引为空时回退扫描一次，把老码补进索引", async () => {
   assert.ok((kv.store.get("index/codes") ?? "").includes("历史遗留"));
 });
 
+test("保留期内的墓碑会保留，过期墓碑在写入时被丢掉", async () => {
+  const kv = createKv();
+  const code = await createCode(kv);
+  const fresh = Date.now() - 10 * 86_400_000; // 10 天前删的，还在保留期内
+  const ancient = Date.now() - 200 * 86_400_000; // 200 天前删的，已过期
+
+  const pushed = await (
+    await worker.fetch(
+      request("/api/entries", {
+        method: "POST",
+        headers: codeHeaders(code),
+        body: {
+          entries: [
+            entry("keep", 1),
+            entry("fresh-tomb", 2, { deletedAt: fresh, updatedAt: fresh }),
+            entry("ancient-tomb", 3, { deletedAt: ancient, updatedAt: ancient }),
+          ],
+        },
+      }),
+      env(kv),
+    )
+  ).json();
+
+  const ids = pushed.entries.map((item) => item.id).sort();
+  assert.deepEqual(ids, ["fresh-tomb", "keep"], "过期墓碑应被丢掉，保留期内的要留着");
+
+  // 再拉一次确认落盘的就是清理后的结果
+  const stored = await (await worker.fetch(request("/api/entries", { headers: codeHeaders(code) }), env(kv))).json();
+  assert.equal(stored.entries.length, 2);
+});
+
+test("过期墓碑被清理后，同一份快照再推一次是幂等的", async () => {
+  const kv = createKv();
+  const code = await createCode(kv);
+  const ancient = Date.now() - 400 * 86_400_000;
+  const payload = {
+    entries: [entry("a", 1), entry("old", 2, { deletedAt: ancient, updatedAt: ancient })],
+  };
+  const first = await (
+    await worker.fetch(request("/api/entries", { method: "POST", headers: codeHeaders(code), body: payload }), env(kv))
+  ).json();
+  const second = await (
+    await worker.fetch(request("/api/entries", { method: "POST", headers: codeHeaders(code), body: payload }), env(kv))
+  ).json();
+  assert.equal(first.entries.length, 1);
+  assert.equal(second.entries.length, 1, "重复推送不应把过期墓碑加回来");
+});
+
 test("删除不存在的码返回 404", async () => {
   const kv = createKv();
   const response = await worker.fetch(
@@ -481,6 +529,34 @@ test("站点预览端口与网站版开发端口都在白名单内", async () =>
     env(createKv()),
   );
   assert.equal(stranger.headers.get("Access-Control-Allow-Origin"), null);
+});
+
+test("Tauri 桌面版的来源被放行，否则会出现网页能同步、桌面连不上", async () => {
+  // WebView 发出的就是这几个 Origin；不放行时响应缺少 ACAO，前端 fetch 直接失败
+  const origins = [
+    "tauri://localhost",
+    "http://tauri.localhost",
+    "https://tauri.localhost",
+    "http://localhost:1420",
+    "http://127.0.0.1:1420",
+  ];
+  for (const origin of origins) {
+    const preflight = await worker.fetch(
+      new Request("https://example.workers.dev/api/entries", { method: "OPTIONS", headers: { Origin: origin } }),
+      env(createKv()),
+    );
+    assert.equal(preflight.headers.get("Access-Control-Allow-Origin"), origin, `${origin} 的预检应被放行`);
+
+    // 实际请求（带同步码）也要带上 ACAO，否则响应会被浏览器丢弃
+    const kv = createKv();
+    const code = await createCode(kv);
+    const actual = await worker.fetch(
+      new Request("https://example.workers.dev/api/entries", { headers: { Origin: origin, "X-Time-Code": code } }),
+      env(kv),
+    );
+    assert.equal(actual.status, 200);
+    assert.equal(actual.headers.get("Access-Control-Allow-Origin"), origin, `${origin} 的实际请求也要带 ACAO`);
+  }
 });
 
 test("显式配置 ALLOWED_ORIGINS 后只放行配置的来源", async () => {

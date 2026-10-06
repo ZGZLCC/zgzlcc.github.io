@@ -8,15 +8,30 @@ const top = 264;
 const hourHeight = 56;
 const dayWidth = (width - left - 24) / 7;
 
+/**
+ * 导出配色写死在这里，不读页面上的 CSS 变量。
+ *
+ * 原来用 getComputedStyle 取 --export-tag-*，深色主题下取到的是另一套颜色，
+ * 于是「同一次导出」在亮色和暗色下结果不同。导出图有自己的固定浅色底，
+ * 配色跟着主题变没有意义，改成常量后才能保证任何时候导出都一模一样。
+ */
+const EXPORT_COLORS: Record<string, string> = {
+  work: "#2563eb",
+  leisure: "#c2410c",
+  sleep: "#7c3aed",
+  other: "#475569",
+};
+
+const exportColor = (tag: string) => EXPORT_COLORS[tag] ?? EXPORT_COLORS.other;
+
 function drawStats(context: CanvasRenderingContext2D, week: WeekView) {
   context.fillStyle = "#626262";
   context.font = '16px "Microsoft YaHei", "Segoe UI", sans-serif';
   context.fillText("本周分类时长", 24, 106);
-  const styles = getComputedStyle(document.documentElement);
   const cardWidth = (width - 84) / 4;
   TAGS.forEach((tag, index) => {
     const x = 24 + index * (cardWidth + 12);
-    const color = styles.getPropertyValue(`--export-tag-${tag.value}`).trim() || "#475569";
+    const color = exportColor(tag.value);
     context.strokeStyle = "#dedede";
     context.strokeRect(x + 0.5, 120.5, cardWidth, 64);
     context.fillStyle = color;
@@ -61,19 +76,19 @@ function drawGrid(context: CanvasRenderingContext2D, week: WeekView) {
   }
   context.fillStyle = "#080808";
   context.font = '600 16px "Microsoft YaHei", "Segoe UI", sans-serif';
+  // 不传 maxWidth：传给 fillText 会触发水平压缩，字被挤扁；宁可让它被裁剪
   week.days.forEach((day, index) => {
-    context.fillText(formatDateHeading(day.date), left + index * dayWidth + 10, top - 14, dayWidth - 20);
+    context.fillText(formatDateHeading(day.date), left + index * dayWidth + 10, top - 14);
   });
 }
 
 function drawEvents(context: CanvasRenderingContext2D, week: WeekView) {
   const entries = new Map(week.entries.map((entry) => [entry.id, entry]));
-  const styles = getComputedStyle(document.documentElement);
   week.days.forEach((day, index) => {
     const x = left + index * dayWidth;
     for (const segment of day.segments) {
       const entry = entries.get(segment.entryId);
-      const color = styles.getPropertyValue(`--export-tag-${entry?.tag ?? "other"}`).trim() || "#475569";
+      const color = exportColor(entry?.tag ?? "other");
       const y = top + ((segment.startMs - day.startMs) / 3_600_000) * hourHeight;
       const height = Math.max(4, ((segment.endMs - segment.startMs) / 3_600_000) * hourHeight);
       context.globalAlpha = 0.12;
@@ -88,7 +103,8 @@ function drawEvents(context: CanvasRenderingContext2D, week: WeekView) {
       context.fillStyle = "#080808";
       if (height >= 22) {
         context.font = '14px "Microsoft YaHei", "Segoe UI", sans-serif';
-        context.fillText(entry?.content ?? "记录", x + 13, y + 18, dayWidth - 25);
+        // 同上：靠裁剪而不是压缩来限制宽度
+        context.fillText(entry?.content ?? "记录", x + 13, y + 18);
       }
       if (height >= 42) {
         context.fillStyle = "#626262";
