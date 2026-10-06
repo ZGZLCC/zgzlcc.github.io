@@ -789,7 +789,13 @@ async function main() {
     );
     check("暗色主题即时生效且刷新后保持", darkApplied && darkAfterReload);
 
-    const overview = await evaluate("document.querySelector('#storage-title')?.parentElement.querySelector('.folder-message')?.textContent.trim()");
+    // 概览是异步读出来的，先等它出现内容再断言，避免读到加载中的占位文案
+    const overviewSelector = "#storage-title ~ p.folder-message:not(.status-error)";
+    await waitFor(
+      `/已完成 \\d+ 条/.test(document.querySelector('${overviewSelector}')?.textContent ?? '')`,
+      "本地数据概览加载完成",
+    );
+    const overview = await evaluate(`document.querySelector('${overviewSelector}')?.textContent.trim()`);
     check("设置页展示本地数据概览", /已完成 1 条/.test(overview ?? ""), overview);
     check(
       "设置页导航同步地址栏 hash",
@@ -942,15 +948,21 @@ async function main() {
     // 14. 配置云端同步并把本地记录推送到假 Worker
     await clickByText(".app-nav-button", "设置");
     await waitFor("!!document.querySelector('#cloud-title')", "云端同步卡片渲染");
+    // 未注入构建地址时设置页会同时显示服务地址与同步码两个输入框
+    const syncFields = await evaluate(`(() => {
+      const card = document.querySelector('#cloud-title').parentElement;
+      return [...card.querySelectorAll('input')].map((input) => input.previousElementSibling?.textContent.trim() ?? input.type);
+    })()`);
     await evaluate(`(() => {
       const setValue = (target, value) => {
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(target, value);
         target.dispatchEvent(new Event('input', { bubbles: true }));
       };
       const card = document.querySelector('#cloud-title').parentElement;
-      const inputs = card.querySelectorAll('input');
-      setValue(inputs[0], ${JSON.stringify(mock.endpoint)});
-      setValue(inputs[1], ${JSON.stringify(mock.token)});
+      const inputs = [...card.querySelectorAll('input')];
+      const byLabel = (label) => inputs.find((input) => input.previousElementSibling?.textContent.trim() === label);
+      setValue(byLabel('同步服务地址') ?? inputs[0], ${JSON.stringify(mock.endpoint)});
+      setValue(byLabel('同步码') ?? inputs[inputs.length - 1], ${JSON.stringify(mock.code)});
       return true;
     })()`);
     await clickByText("#cloud-title ~ .backup-actions .button", "保存配置");
@@ -963,10 +975,14 @@ async function main() {
         uploaded[0].state === "completed" && uploaded[0].updatedAt > 0,
       `${uploaded.length} 条，内容「${uploaded[0]?.content ?? ""}」`,
     );
-    const storedToken = await evaluate("localStorage.getItem('timeweb-sync')");
+    const storedSync = await evaluate("localStorage.getItem('timeweb-sync')");
     check(
-      "同步配置保存在本机且包含地址与口令",
-      typeof storedToken === "string" && storedToken.includes(mock.endpoint) && storedToken.includes(mock.token),
+      "设置页显示位置与同步码字段，配置保存在本机",
+      syncFields.includes("同步码") &&
+        typeof storedSync === "string" &&
+        storedSync.includes(mock.endpoint) &&
+        storedSync.includes(mock.code),
+      `字段：${syncFields.join("/")}；已保存=${storedSync !== null}`,
     );
 
     // 15. 清空浏览器本地数据后从云端恢复

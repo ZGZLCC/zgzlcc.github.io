@@ -1,151 +1,214 @@
 # Cloudflare 云端同步部署步骤
 
-网站版不需要后端也能用；只有想让记录在换浏览器、换设备后仍然拿得回来时，才需要按本文开一次 Cloudflare 的免费后端。全程零费用，不需要信用卡。
+网站版不需要后端也能用。只有想让记录在换浏览器、换设备后仍然拿得回来，或者**给别人发同步码**时，才需要按本文开一次 Cloudflare 免费后端。全程零费用，不需要信用卡。
 
-用到的服务只有两个，都在 Cloudflare Workers 免费额度内：
+用到的只有两个免费服务：
 
 | 服务 | 免费额度 | 本应用的实际消耗 |
 | --- | --- | --- |
-| Workers 请求 | 10 万次/天 | 每次保存或同步算 1 次，个人使用每天几十次 |
-| D1 行写入 | 10 万行/天 | 每次同步写入变更的记录 |
-| D1 行读取 | 500 万行/天 | 每次拉取读取全部记录 |
-| D1 存储 | 5 GB | 十年记录约 1～2 MB |
+| Workers 请求 | 10 万次/天 | 每次保存或同步算 1 次，每个用户每天几十次 |
+| KV 读取 | 10 万次/天 | 每次同步读 1～2 个键 |
+| KV 写入 | 1000 次/天 | 每次同步写 2 个键 |
+| KV 存储 | 1 GB | 一万条记录约几百 KB |
 
-## 一、准备工作
+**写入次数是主要瓶颈**：1000 次/天按每次同步写 2 个键算，大约支持每天 500 次同步，够几个到十几个用户用。人再多就要换 D1（额度大得多）。
 
-1. 注册 Cloudflare 账号：<https://dash.cloudflare.com/sign-up>，免费版即可，不需要绑定支付方式。
-2. 本机已安装 Node.js（与应用相同的要求）。
+## 一、工作原理
 
-## 二、创建 D1 数据库
+一个**同步码**对应一份独立数据，码只能由你创建：
+
+```
+codes/time_xxxx     → 这份码是否存在、发给谁、是否被停用
+entries/time_xxxx   → 这份码下的全部记录
+```
+
+- 你持有 **ADMIN_TOKEN**，能创建、查看、停用与启用同步码
+- 用户只拿到一个**同步码**，用它读写自己那份数据
+- 码是数据分区标识，**不是密钥**：用户打开浏览器开发者工具就能看到自己的码。所以码不能拿来当权限边界，安全靠"码足够长猜不到 + 只有你能创建 + 可以随时停用或启用"
+
+## 二、创建 KV 命名空间
 
 在 `web/worker` 目录下执行：
 
 ```bash
 cd web/worker
-npx wrangler login                     # 浏览器里点授权，只需一次
-npx wrangler d1 create time-sync       # 创建数据库
+npx wrangler login                          # 浏览器里点授权，只需一次
+npx wrangler kv namespace create TIME_SYNC --binding TIME_SYNC --update-config
 ```
 
-命令会输出一段包含 `database_id` 的配置。把 `worker/wrangler.toml` 里的
-`database_id` 换成这个真实 id。
+`--binding TIME_SYNC --update-config` 会自动把命名空间 id 写进 `wrangler.toml`，不用手工复制。执行完确认一下文件里 `id` 已经不是 `REPLACE_WITH_KV_NAMESPACE_ID`。
 
-**三个名字不要混淆：**
+## 三、设置管理口令
 
-| 配置项 | 作用 | 本项目用的值 |
-| --- | --- | --- |
-| `binding` | 代码里访问它的变量名，即 `env.xxx` | `time_sync` |
-| `database_name` | 数据库在 Cloudflare 上的名字 | `time-sync` |
-| `database_id` | 数据库的真实 ID | 创建时输出的 UUID |
-
-只有 `binding` 必须与代码一致：Cloudflare 会把数据库名里的 `-` 换成 `_` 作为默认绑定名，
-所以 `time-sync` 的默认绑定名就是 `time_sync`。本项目的 `wrangler.toml` 与
-`worker/src/http.ts` 已按这个名字对齐；若改成别的名字，这两处必须一起改。
-
-## 三、建表
-
-```bash
-npx wrangler d1 execute time-sync --remote --file=schema.sql
-```
-
-## 四、设置访问口令
-
-口令就是前端设置页要填的那串字符，相当于这个后端的唯一钥匙。自己生成一串足够长的随机字符，例如：
+这是**唯一**需要你保管好的密钥，它决定谁能创建同步码。
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+npx wrangler secret put ADMIN_TOKEN
+# 提示 Enter a secret value 时粘贴上一步的输出
 ```
 
-把输出原样存进 Worker：
+口令不会进入代码或仓库，请存进密码管理器。**不要把它发给任何人**，也不要在聊天里贴出来。
 
-```bash
-npx wrangler secret put SYNC_TOKEN
-coESKmt81npS2Kmv5WG89kOq3EYNw8cyf3i8FSxiUa8
-# 粘贴上一步生成的口令，回车
-```
+> 注意命令形式：`secret put` 后面跟的是**名字**（`ADMIN_TOKEN`），值在交互提示里粘贴。写成 `secret put <值>` 会创建出一个名字是那串值的密钥。
 
-口令不会进入代码或仓库；换成新口令后，前端设置页里也要同步更新。
-
-## 五、部署 Worker
+## 四、部署
 
 ```bash
 npx wrangler deploy
 ```
 
-部署成功后会输出形如 `https://time-sync.<你的账号>.workers.dev` 的地址，这就是前端要填的 Worker 地址。
+输出形如 `https://time-sync.<你的子域>.workers.dev` 的地址。如果提示需要先注册 `workers.dev` 子域，按提示注册即可（子域注册后不可更改）。
 
-## 六、在应用里配置
+## 五、创建第一个同步码（你自己用）
 
-打开网站版的设置页，在「云端同步」卡片里填写：
+同步码用交互式管理脚本打理，像根目录的 `manage` 一样：双击或直接运行 `web\worker\sync.cmd` 会进入菜单。
 
-- **Worker 地址**：上一步输出的地址
-- **访问口令**：第四步设置的口令
-
-先点「保存配置」，再点「上传本地记录」把浏览器里已有的记录推上云端。之后每次保存都会自动同步；换设备时填入同一份地址与口令，打开页面就会自动拉回全部记录。
-
-## 七、验证是否接通
-
-```bash
-# 不带口令应当返回 401
-curl https://time-sync.<你的账号>.workers.dev/api/entries
-
-# 带上口令应当返回记录列表
-curl -H "X-Time-Token: 你的口令" https://time-sync.<你的账号>.workers.dev/api/entries
+```powershell
+cd web\worker
+.\sync.cmd
 ```
 
-## 八、需要知道的三件事
+```
+Time 同步服务管理
 
-1. **口令等于访问权。** 拿到口令的人就能读写你的记录，它保存在浏览器 localStorage 里，不是加密。请勿把口令写进代码、截图或公开仓库。
-2. **免费额度不会过期但会按天重置。** 额度在每天 00:00 UTC 重置；个人使用远远用不完。Cloudflare 明确说明 Workers 免费版会一直保留 D1 的试用能力。
-3. **云端不是唯一副本。** 记录同时保存在浏览器本地，云端是第二份副本；建议仍然定期在设置页导出 JSON 备份，它是完全不依赖任何服务商的最后一道保险。应用会在距上次导出超过 7 天时提醒，设置页也会显示上次导出时间。
+  1 查看同步码      2 创建同步码     3 查看某个码     4 修改备注
+  5 停用同步码      6 启用同步码     7 彻底删除
+  8 设置管理口令    9 安装依赖与命名空间
+ 10 部署 Worker    11 本地调试      12 查看状态       0 退出
 
-## 八点五、国内直连的限制
+  停用只是切断同步，数据一条不动，随时可以启用回来；
+  彻底删除会连数据一起删掉，需要二次确认。
 
-`*.workers.dev` 的域名解析在国内被污染：实测 A 记录指向 Verizon 地址段（`128.242.240.157`）、AAAA 记录指向 Meta 地址段（`2a03:2880::`），Cloudflare 的 IPv4 网段也不可达（`104.16` / `172.64` / `188.114` 全部连接超时）。因此**不挂代理时同步一定失败，这与配置是否正确无关**。
-
-表现是设置页显示「同步失败」并给出上述说明。此时记录、统计、导出、备份全部正常，只是不同步；本地记录不受任何影响，恢复可用网络后会自动重试。
-
-要摆脱这个限制只有两条路：挂代理使用，或者把后端换到国内服务商（并接受实名认证与备案要求）。
-
-## 九、常见问题
-
-**同步一直失败，或者 Worker 返回 500 并提到 `undefined`。**
-先确认 D1 绑定名与代码一致：`wrangler.toml` 的 `binding` 必须是 `time_sync`，
-`worker/src/http.ts` 里的字段名也必须是 `time_sync`。绑定名不匹配时 Worker 能部署成功，
-但一请求就会因为拿不到数据库而报错。
-
-另外确认 `SYNC_TOKEN` 已设置：没设置时所有请求都会返回 401。
-
-**改了 `wrangler.toml` 但没生效。**
-配置改动需要重新执行 `npx wrangler deploy` 才会上线。
-
-**该用 CLI 还是 Dashboard 管绑定？**
-两者选一个就好。用 `wrangler deploy` 部署时以 `wrangler.toml` 为准；
-在 Dashboard 的 Worker → 设置 → 绑定里手动加数据库时，变量名也填 `time_sync`，
-不要一边改 Dashboard 一边改 `wrangler.toml`，否则下次部署可能把手工改动覆盖掉。
-
-## 十、本地调试
-
-不部署也能验证 Worker：
-
-```bash
-cd web/worker
-npx wrangler dev                        # 本地起一个 Worker，自动使用本地 D1
-npx wrangler d1 execute time-sync --local --file=schema.sql
+输入数字:
 ```
 
-## 十一、可选：限定允许访问的站点
+**第一次用先选 `8` 把管理口令存下来**（只存在 `web\worker\.admin-token`，该文件已被 `.gitignore` 忽略），然后选 `1` 看列表、选 `2` 创建。
+
+也可以带参数直接执行，便于放进脚本：
+
+```powershell
+.\sync.cmd status               # 看服务地址、命名空间、口令、代理与连通性
+.\sync.cmd list                 # 列出同步码
+.\sync.cmd create 我自己         # 创建
+.\sync.cmd show time_xxx        # 详情
+.\sync.cmd rename time_xxx 李四  # 改备注
+.\sync.cmd revoke time_xxx      # 停用
+.\sync.cmd restore time_xxx     # 启用
+.\sync.cmd purge time_xxx       # 彻底删除（会再问一次确认）
+```
+
+### 停用与删除的区别
+
+| 操作 | 对方还能同步吗 | 数据 | 能否恢复 |
+| --- | --- | --- | --- |
+| **停用** `revoke` | 不能，码立即失效 | **一条不动** | 能，`restore` 启用后照旧使用 |
+| **彻底删除** `purge` | 不能，码不存在 | **全部删除** | 不能 |
+
+停用适合这些场景：暂时不想让对方继续写、怀疑码外泄、想先掐断再排查。启用后对方的记录、创建时间、备注全都还在，用原来的码继续同步即可。**停用不会重置任何东西。**
+
+删除只用在确定不再需要这份数据时，需要 `--yes` 二次确认。
+
+`list` 的输出：
+
+```
+共 2 个同步码（启用中 2 个，已停用 0 个）：
+
+  1. time_b7xK2mQ9wZ4nR8tY6uP3sL5vC1aD0eFg
+     备注：张三
+     创建：2026-10-06 14:20    状态：有效
+     记录：128 条    最近同步：2026-10-06 18:03
+```
+
+**查看、改备注、停用/启用、删除都既接受同步码，也接受备注**，按备注记比抄那串长码方便：
+
+```powershell
+.\sync.cmd show 张三        # 等价于 show time_b7xK2mQ...
+```
+
+备注重名时会全部列出，并提示改用同步码指定。全新的码从没同步过，显示为 `记录：0 条    最近同步：从未同步`，这是正常的。
+
+创建后会打印一个 `time_...` 的码，把它填进网页设置页的「同步码」，点「保存配置」→「上传本地记录」，云端就有一份了。
+
+发码时建议一起说明两件事：
+
+1. 把码粘贴到设置页的「同步码」，再点「保存配置」
+2. **请定期在设置页导出 JSON 备份**——云端只是第二份副本，无法替代自己手里的备份
+
+### 也可以直接用命令行工具
+
+`admin.mjs` 是同一套功能的非交互版本，适合写进其他脚本：
+
+```powershell
+$env:TIME_SYNC_ADMIN = "你的ADMIN_TOKEN"
+node admin.mjs status
+node admin.mjs list
+node admin.mjs create 张三
+node admin.mjs rename time_xxx 李四
+node admin.mjs revoke time_xxx      # 停用
+node admin.mjs restore time_xxx     # 启用
+node admin.mjs purge time_xxx --yes # 彻底删除
+```
+
+### 代理
+
+`admin.mjs` **自己会走代理**，不需要额外设置。查找顺序是：
+
+1. `TIME_SYNC_PROXY` 环境变量
+2. `HTTPS_PROXY` / `ALL_PROXY` 环境变量
+3. Windows「Internet 选项」里的系统代理（读注册表）
+4. 都没有就直连
+
+之所以要自己做这件事：Node 的 `fetch` **不读** Windows 系统代理设置，只认环境变量。而 PowerShell 的 `Invoke-WebRequest` 和 `wrangler` 会走系统代理。如果不管，就会出现「状态显示能连、列表却说连不上」这种自相矛盾的情况——两台工具走了两条网络路径。
+
+`.\sync.cmd status` 会把探测到的代理和来源一并打印出来，便于确认走对了：
+
+```
+服务地址：https://time-sync.zgzlcc.workers.dev
+管理口令：已配置
+代理：http://127.0.0.1:7897（Windows 系统代理）
+连通性：服务可访问，鉴权生效
+```
+
+## 七、本地调试
+
+不部署也能验证 Worker：菜单里选 `10`，或直接执行：
+
+```powershell
+cd web\worker
+.\sync.cmd local                # 等价于 npx wrangler dev
+```
+
+用 `.\sync.cmd install`（菜单 `8`）会自动安装依赖并在需要时创建 KV 命名空间。
+
+## 八、需要知道的四件事
+
+1. **你在替别人保管数据。** 发码之后，别人的时间记录存在你的 Cloudflare 账号里。账号出问题、误删命名空间、超额停服，都会影响到他们。所以务必提醒对方自己也导出备份。
+2. **免费额度是全局共享的。** KV 每天 1000 次写入由所有用户共用，某个用户用量异常会拖慢所有人。应用已加单码 2 万条记录上限和 2 MB 单次请求上限，但挡不住“很多人一起用”。
+3. **停用与删除是两件事。** `revoke` 只让码失效，数据一条不动，`restore` 就能原样启用回来；只有 `purge` 才会删除数据且无法恢复。绝大多数情况你要的是停用。
+4. **码等于读写权限。** 拿到码就能改那份数据，没有只读码。给别人看但不能改的需求要另做功能；只想临时掐断就用停用。
+
+## 九、可选：限定允许访问的站点
 
 默认放行这些来源：
 
 - `https://zgzlcc.github.io` —— 线上站点
-- `http://localhost:4321`、`http://localhost:4322`（含 `127.0.0.1`）—— 相册站点的本地预览端口，用于整站联调
+- `http://localhost:4321`、`http://localhost:4322`（含 `127.0.0.1`）—— 相册站点的本地预览端口
 - `http://127.0.0.1:5180`、`http://127.0.0.1:5181`（含 `localhost`）—— 网站版自身的开发与预览端口
 
-如果以后换域名，在 `wrangler.toml` 里加：
+换域名时在 `wrangler.toml` 里加：
 
 ```toml
 [vars]
 ALLOWED_ORIGINS = "https://zgzlcc.github.io,https://你的新域名"
 ```
 
-**一旦显式配置 `ALLOWED_ORIGINS`，上面的默认列表就整体失效**，只放行写进去的那几个，本地调试地址也要一并写上。改完重新执行 `npx wrangler deploy`。
+**一旦显式配置，上面的默认列表就整体失效**，本地调试地址也要一并写上。改完重新 `npx wrangler deploy`。
+
+## 十、国内直连的限制
+
+`*.workers.dev` 的域名解析在国内被污染（A 记录指向 Verizon 网段、AAAA 记录指向 Meta 网段），Cloudflare 的 IPv4 网段也不可达。因此**不挂代理时国内无法使用同步，这与配置是否正确无关**。
+
+这直接影响"发给别人"这件事：**国内的朋友拿到码也用不了**，除非他们自己有代理。要真正可用，需要把 Worker 绑到自己的域名上（域名要花钱，且境内可达性仍需实测）。
+
+此时本地记录、统计、导出、备份全部正常，只是不同步。

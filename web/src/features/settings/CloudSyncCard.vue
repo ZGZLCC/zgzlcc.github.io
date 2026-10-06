@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { sync, syncStateLabel } from "../../api";
+import { hasBuiltInEndpoint } from "../../storage/remote-settings";
 import { formatBeijingTime } from "../../time";
 
+const code = ref(sync.settings.value.code);
 const endpoint = ref(sync.settings.value.endpoint);
-const token = ref(sync.settings.value.token);
 const saved = ref(false);
+const needsEndpoint = !hasBuiltInEndpoint();
 
 const statusLabel = computed(() => syncStateLabel(sync.state.value, sync.lastSyncedAt.value));
 const lastSynced = computed(() =>
@@ -16,7 +18,7 @@ const configured = computed(() => sync.configured);
 const syncMessage = computed(() => sync.message.value);
 
 function saveConfig() {
-  sync.updateSettings({ endpoint: endpoint.value.trim(), token: token.value.trim() });
+  sync.updateSettings({ endpoint: endpoint.value.trim(), code: code.value.trim() });
   saved.value = true;
   window.setTimeout(() => {
     saved.value = false;
@@ -34,17 +36,17 @@ function run(action: "sync" | "push" | "pull") {
   <section class="panel settings-card" aria-labelledby="cloud-title">
     <h3 id="cloud-title">云端同步</h3>
     <p>
-      填写自建 Cloudflare Worker 的地址与访问口令后，记录会在本地保存的同时同步到云端，换浏览器或换设备填入同一份配置即可拉回全部记录。
-      口令只保存在本机，不会写入导出的备份文件。
+      填入管理员给你的同步码后，记录会在本地保存的同时同步到云端，换浏览器或换设备填入同一个码即可拉回全部记录。
+      一个同步码对应一份独立数据，码只保存在本机，不会写进导出的备份文件。
     </p>
     <div class="field-stack">
-      <label class="field">
-        <span>Worker 地址</span>
+      <label v-if="needsEndpoint" class="field">
+        <span>同步服务地址</span>
         <input v-model="endpoint" type="url" placeholder="https://time-sync.你的账号.workers.dev" spellcheck="false" autocomplete="off" />
       </label>
       <label class="field">
-        <span>访问口令</span>
-        <input v-model="token" type="password" placeholder="与 Worker 的 SYNC_TOKEN 一致" spellcheck="false" autocomplete="off" />
+        <span>同步码</span>
+        <input v-model="code" type="text" placeholder="time_ 开头的一串字符" spellcheck="false" autocomplete="off" />
       </label>
     </div>
     <div class="backup-actions">

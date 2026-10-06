@@ -15,19 +15,56 @@ node_modules/
 web/node_modules/
 web/dist/
 
-# Wrangler 本地状态与本地密钥：绝不能提交
-web/worker/.wrangler/
-web/worker/.dev.vars
+# ---------------------------------------------------------------
+# 口令、密钥与本地状态：绝对不能提交
+#
+# 这些规则放在仓库根，作用范围是整个仓库。写在 web/.gitignore 里只对
+# web/ 生效，script/ 或仓库根目录下的同名文件会漏掉。
+# ---------------------------------------------------------------
+
+# 文件名或扩展名里带这些词的，一律不提交
+*密钥*
+*密码*
+*token*
+*secret*
+*credential*
+*api-key*
+*apikey*
+*passwd*
+*password*
+.apikey
+*.pem
+*.key
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+.htpasswd
+.netrc
+
+# 环境变量文件（保留 .env.example 作为模板）
+.env
+.env.*
+!.env.example
+
+# Cloudflare / Wrangler 的本地状态与本地密钥
+.wrangler/
+**/.wrangler/
+.dev.vars
+**/.dev.vars
+
+# ---------------------------------------------------------------
+# 例外：这些源码文件名里带 token，但必须提交
+# ---------------------------------------------------------------
+!web/src/storage/remote-settings.ts
+!web/worker/http.mjs
+!web/worker/http.ts
 
 # logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-
-# environment variables
-.env
-.env.production
 
 # macOS-specific files
 .DS_Store

@@ -33,8 +33,11 @@ web/
 │  ├─ implementation-plan.md
 │  └─ project-structure.md
 ├─ worker/
+│  ├─ admin.mjs
+│  ├─ http.mjs
 │  ├─ package.json
-│  ├─ schema.sql
+│  ├─ sync.cmd
+│  ├─ sync.ps1
 │  ├─ tsconfig.json
 │  ├─ wrangler.toml
 │  └─ src/
@@ -119,7 +122,7 @@ web/
 | `scripts/core.test.mjs` | 检查校验、重叠、周区间裁剪、分类汇总、记录编号、时间戳比较与备份字段解析。 |
 | `scripts/sync.test.mjs` | 检查两端合并规则：谁胜出、删除墓碑不被复活、两端一致判定与墓碑清理。 |
 | `scripts/offline.test.mjs` | 检查网络不可达时的说明文案（区分被污染的 workers.dev 与其他地址）与备份提醒的触发阈值、导出时间读写。 |
-| `scripts/worker.test.mjs` | 用内存版 D1 检查 Worker 的鉴权、CORS、路径与方法校验、合并写入及旧客户端不覆盖新记录。 |
+| `scripts/worker.test.mjs` | 用内存版 KV 检查管理接口鉴权、同步码格式与创建、索引清单的强一致列出与自愈、多码数据隔离、停用后拒绝与启用后数据一条不少、CORS 与合并写入。 |
 | `scripts/mock-worker.mjs` | 浏览器实测用的假 Worker：实现相同接口与合并规则，并可提供测试用备份文件。 |
 | `scripts/time.test.mjs` | 检查北京时间转换、日期边界、整分钟时长显示、闰日与跨年周跳转及标题格式。 |
 | `scripts/day-range.test.mjs` | 检查北京时间单日区间、跨 UTC 日界的日期归属、跨午夜记录归属与空日期不过滤。 |
@@ -135,12 +138,15 @@ web/
 
 | 路径 | 当前职责 |
 | --- | --- |
-| `worker/src/index.ts` | Worker 入口：路由与预检、读写处理、请求体大小限制，以及按修订号返回结果。 |
-| `worker/src/entries.ts` | 记录的结构校验（请求体与数据库行两个方向）与按 `updatedAt` 合并两端快照。 |
-| `worker/src/http.ts` | 运行环境类型（D1 绑定名 `time_sync`）、JSON 响应、CORS 来源白名单与定长口令比较。 |
-| `worker/src/env.d.ts` | Worker 运行环境的最小类型声明，只声明实际用到的 D1 接口。 |
-| `worker/schema.sql` | D1 表结构：`entries` 记录表与 `meta` 修订号表。 |
-| `worker/wrangler.toml` | Worker 名称、入口、兼容日期与 D1 绑定；数据库绑定名固定为 `time_sync`，口令通过 `wrangler secret` 注入。 |
+| `worker/src/index.ts` | Worker 入口：管理接口（创建、列出、查看、改备注、停用、启用、彻底删除同步码）与数据接口（按同步码分区读写 KV）、`index/codes` 清单维护、请求体与单码记录数上限、按 `updatedAt` 合并。 |
+| `worker/admin.mjs` | 同步码管理命令行工具：状态检查、创建、列出、查看、改备注、停用、启用、彻底删除；查看与停用/启用/删除可用同步码或备注定位；口令取自 `TIME_SYNC_ADMIN` 环境变量或 `.admin-token` 文件。 |
+| `worker/http.mjs` | 请求与代理支持：识别 `HTTPS_PROXY`／`ALL_PROXY`／Windows 系统代理，经 CONNECT 隧道发 HTTPS 请求。Node 的 fetch 不读系统代理，直连会被 `*.workers.dev` 的 DNS 污染挡住，所以自行处理。 |
+| `worker/sync.ps1` | 交互式管理脚本：编号菜单与带参数两种用法，覆盖同步码管理（含停用／启用）、口令保存、依赖与命名空间安装、部署、本地调试与状态检查。显示统一走 `Write-Host`，返回值只表示成功与否。 |
+| `worker/sync.cmd` | `sync.ps1` 的 Windows 入口；无参数时进入菜单，退出码 10 表示用户选择退出。 |
+| `worker/src/entries.ts` | 记录的结构校验与按 `updatedAt` 合并两份快照。 |
+| `worker/src/http.ts` | 运行环境类型（KV 绑定名 `TIME_SYNC`）、JSON 响应、CORS 来源白名单、管理口令定长比较与同步码读取。 |
+| `worker/src/env.d.ts` | Worker 运行环境的最小类型声明，只声明实际用到的 KV 接口。 |
+| `worker/wrangler.toml` | Worker 名称、入口、兼容日期与 KV 绑定；管理口令通过 `wrangler secret` 注入。 |
 | `worker/package.json` | Worker 的本地调试与部署命令。 |
 | `worker/tsconfig.json` | 单独检查 `worker/` 源码类型。 |
 
@@ -205,7 +211,7 @@ web/
 | `src/features/week/week-image.ts` | 用 Canvas 绘制七天时间表与本周四类时长；导出保持固定浅色配色并生成文件名。 |
 | `src/features/week/week.css` | 周视图导航、统计、详情及通用区块样式。 |
 | `src/features/week/week-grid.css` | 自适应七天网格、小时刻度与分类事件色带样式。 |
-| `src/features/settings/CloudSyncCard.vue` | 云端同步卡片：填写 Worker 地址与访问口令、保存配置、立即同步、上传本地记录、从云端恢复，并显示同步状态与错误。 |
+| `src/features/settings/CloudSyncCard.vue` | 云端同步卡片：填写同步码（未注入服务地址时同时显示地址），保存配置、立即同步、上传本地记录、从云端恢复，并显示同步状态与错误。 |
 | `src/features/settings/SettingsPage.vue` | 四张整行设置卡片：云端同步、JSON 备份导出与恢复（含清空记录）、本地数据概览、持久化的系统／亮／暗主题切换。 |
 | `src/features/settings/settings.css` | 设置卡片布局、全宽三按钮主题选择及窄窗口适配。 |
 

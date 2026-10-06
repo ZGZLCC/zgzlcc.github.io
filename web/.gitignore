@@ -4,8 +4,5 @@ dist/
 *.local
 .DS_Store
 
-# Wrangler 本地状态与本地密钥：绝不能提交
-.wrangler/
-**/.wrangler/
-.dev.vars
-**/.dev.vars
+# 口令、密钥、环境变量与 Wrangler 本地状态的忽略规则统一放在仓库根 .gitignore，
+# 那里作用范围是整个仓库；写在这里只对 web/ 生效，其他目录会漏。

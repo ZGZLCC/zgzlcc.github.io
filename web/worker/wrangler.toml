@@ -1,17 +1,16 @@
-# Cloudflare Worker + D1 配置。
-# database_id 取自 `npx wrangler d1 create time-sync` 的输出。
-# 绑定名用 time_sync：与 Cloudflare 给数据库名生成的默认绑定名一致，
-# 这样在 Dashboard 里手动绑定数据库时不用改名字；改这里就必须同步改 worker/src/http.ts。
+# Cloudflare Worker + KV 配置。
+# 一个同步码对应一个 KV 键，多个用户可以各用各的数据分区。
+# id 取自 `npx wrangler kv namespace create TIME_SYNC` 的输出。
+# 绑定名固定为 TIME_SYNC，改这里就必须同步改 worker/src/http.ts。
 name = "time-sync"
 main = "src/index.ts"
 compatibility_date = "2026-01-01"
 
-[[d1_databases]]
-binding = "time_sync"
-database_name = "time-sync"
-database_id = "6ef04f79-36f2-4375-b16a-8e322a4551fb"
+[[kv_namespaces]]
+binding = "TIME_SYNC"
+id = "5a4cb1eb375c418ea2707c2804be4cba"
 
-# 访问口令用 `npx wrangler secret put SYNC_TOKEN` 写入，不要写在这里。
+# 管理口令用 `npx wrangler secret put ADMIN_TOKEN` 写入，不要写在这里。
 # 可选：限定允许访问的前端来源，多个用逗号分隔；留空时默认放行
 # https://zgzlcc.github.io 与本地开发地址。
 # [vars]

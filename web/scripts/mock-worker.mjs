@@ -4,7 +4,7 @@
  */
 import { createServer } from "node:http";
 
-const TOKEN = "browser-check-token";
+const CODE = "time_b7xK2mQ9wZ4nR8tY6uP3sL5vC1aD0eFg";
 const MAX_BODY_BYTES = 2_000_000;
 /** 与线上一致：只有更新的版本才允许覆盖已有行。 */
 const rows = new Map();
@@ -44,7 +44,7 @@ function send(response, status, payload) {
   response.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type, X-Time-Token",
+    "Access-Control-Allow-Headers": "Content-Type, X-Time-Code",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   });
   response.end(body);
@@ -77,7 +77,7 @@ export function startMockWorker(options = {}) {
       send(response, 404, { error: "not_found" });
       return;
     }
-    if (request.headers["x-time-token"] !== TOKEN) {
+    if (request.headers["x-time-code"] !== CODE) {
       send(response, 401, { error: "unauthorized" });
       return;
     }
@@ -124,7 +124,7 @@ export function startMockWorker(options = {}) {
       const { port } = server.address();
       resolve({
         endpoint: `http://127.0.0.1:${port}`,
-        token: TOKEN,
+        code: CODE,
         rows,
         close: () => new Promise((done) => server.close(done)),
       });

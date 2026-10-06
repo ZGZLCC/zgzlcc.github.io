@@ -6,11 +6,14 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "schema:local": "wrangler d1 execute time-sync --local --file=schema.sql",
-    "schema:remote": "wrangler d1 execute time-sync --remote --file=schema.sql"
+    "codes": "node admin.mjs list",
+    "codes:create": "node admin.mjs create",
+    "codes:revoke": "node admin.mjs revoke",
+    "codes:restore": "node admin.mjs restore",
+    "codes:purge": "node admin.mjs purge",
+    "status": "node admin.mjs status"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250109.0",
     "wrangler": "^4.0.0"
   }
 }

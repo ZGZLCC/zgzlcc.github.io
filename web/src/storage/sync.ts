@@ -35,7 +35,7 @@ export class SyncEngine {
   constructor(
     private readonly repository: TimeRepository,
     private readonly createClient: (settings: SyncSettings) => RemoteClient = (settings) =>
-      new HttpRemoteClient(settings.endpoint, settings.token),
+      new HttpRemoteClient(settings.endpoint, settings.code),
   ) {
     if (typeof window !== "undefined") {
       window.addEventListener("online", () => void this.sync());

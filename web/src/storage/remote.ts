@@ -15,14 +15,14 @@ export class HttpRemoteClient implements RemoteClient {
   private readonly base: string;
   private readonly send: typeof fetch;
 
-  constructor(endpoint: string, private readonly token: string, fetchImpl?: typeof fetch) {
+  constructor(endpoint: string, private readonly code: string, fetchImpl?: typeof fetch) {
     this.base = endpoint.trim().replace(/\/+$/, "");
     // 必须用箭头函数包一层：直接保存 fetch 后以实例方法调用会丢失 this，浏览器会抛 Illegal invocation。
     this.send = (...args) => (fetchImpl ?? globalThis.fetch)(...args);
   }
 
   private headers(): HeadersInit {
-    return { "X-Time-Token": this.token };
+    return { "X-Time-Code": this.code.trim() };
   }
 
   private async request(init: RequestInit, action: string): Promise<EntriesResponse> {
@@ -32,8 +32,11 @@ export class HttpRemoteClient implements RemoteClient {
     } catch (error) {
       throw new AppError("storage", unreachableHint(this.base));
     }
+    if (response.status === 400) {
+      throw new AppError("storage", "同步码格式无效，请确认完整复制了管理员给你的码");
+    }
     if (response.status === 401) {
-      throw new AppError("storage", "云端拒绝了访问口令，请检查设置页中的口令是否与 Worker 一致");
+      throw new AppError("storage", "这个同步码不存在或已被吊销，请向管理员索取新的码");
     }
     if (!response.ok) {
       throw new AppError("storage", `云端返回 ${response.status}，${action}失败`);
@@ -41,7 +44,7 @@ export class HttpRemoteClient implements RemoteClient {
     try {
       return (await response.json()) as EntriesResponse;
     } catch {
-      throw new AppError("storage", "云端返回的内容无法解析，请确认地址指向 Time 同步 Worker");
+      throw new AppError("storage", "云端返回的内容无法解析，请确认地址指向 Time 同步服务");
     }
   }
 

@@ -12,24 +12,41 @@ export interface RemoteClient {
 export type SyncState = "idle" | "syncing" | "synced" | "offline" | "error";
 
 export interface SyncSettings {
-  /** Worker 地址，例如 https://time-sync.xxx.workers.dev */
+  /** Worker 地址；构建时注入默认值，通常不需要用户填写。 */
   endpoint: string;
-  /** 与 Worker 上的 SYNC_TOKEN 对应的访问口令。 */
-  token: string;
+  /** 同步码：由管理员创建，一个码对应一份独立数据。 */
+  code: string;
 }
 
 const SETTINGS_KEY = "timeweb-sync";
 const LAST_SYNCED_KEY = "timeweb-synced-at";
 
-/** 同步配置只保存在本机，不进入备份文件，也不会随导出泄露口令。 */
+/** 构建时注入的同步服务地址；没有配置时用户需要自己填写。 */
+const BUILT_IN_ENDPOINT = (import.meta.env?.VITE_TIME_SYNC_ENDPOINT ?? "").trim();
+
+export function defaultEndpoint(): string {
+  return BUILT_IN_ENDPOINT;
+}
+
+export function hasBuiltInEndpoint(): boolean {
+  return BUILT_IN_ENDPOINT !== "";
+}
+
+/**
+ * 同步配置只保存在本机，不进入备份文件。
+ * 同步码是数据分区标识而非密钥，泄露只影响这一份数据，可用管理接口吊销。
+ */
 export function loadSyncSettings(): SyncSettings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    if (!raw) return { endpoint: "", token: "" };
-    const value = JSON.parse(raw) as Partial<SyncSettings>;
-    return { endpoint: String(value.endpoint ?? ""), token: String(value.token ?? "") };
+    if (!raw) return { endpoint: BUILT_IN_ENDPOINT, code: "" };
+    const value = JSON.parse(raw) as { endpoint?: unknown; code?: unknown };
+    return {
+      endpoint: String(value.endpoint ?? "").trim() || BUILT_IN_ENDPOINT,
+      code: String(value.code ?? "").trim(),
+    };
   } catch {
-    return { endpoint: "", token: "" };
+    return { endpoint: BUILT_IN_ENDPOINT, code: "" };
   }
 }
 
@@ -56,5 +73,5 @@ export function saveLastSyncedAt(timestampMs: number): void {
 }
 
 export function isConfigured(settings: SyncSettings): boolean {
-  return settings.endpoint.trim() !== "" && settings.token.trim() !== "";
+  return settings.endpoint.trim() !== "" && settings.code.trim() !== "";
 }
