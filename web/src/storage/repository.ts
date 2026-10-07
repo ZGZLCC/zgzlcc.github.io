@@ -20,6 +20,13 @@ export interface TimeRepository {
   /** 写入同步结果：仅新增或替换给定记录，不动其他内容。 */
   applyRemote(entries: TimeEntry[]): Promise<void>;
   /**
+   * 用给定快照**整体覆盖**本地，返回写入条数：不在快照里的记录会打上删除标记。
+   *
+   * 与 `applyRemote` 的区别：那个是逐条合并，这个是让本地变成快照的镜像。
+   * 覆盖会留下墓碑，随后被推回云端，删除才会传到其他设备。
+   */
+  mirrorRemote(entries: TimeEntry[]): Promise<number>;
+  /**
    * 真正删除超过保留期的删除墓碑（不只是过滤返回值）。
    *
    * 墓碑的用处是让离线很久的设备同步到"这条被删了"，所以不能立刻删；

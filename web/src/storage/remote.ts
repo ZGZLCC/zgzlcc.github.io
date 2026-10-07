@@ -25,10 +25,10 @@ export class HttpRemoteClient implements RemoteClient {
     return { "X-Time-Code": this.code.trim() };
   }
 
-  private async request(init: RequestInit, action: string): Promise<EntriesResponse> {
+  private async request(init: RequestInit, action: string, suffix = ""): Promise<EntriesResponse> {
     let response: Response;
     try {
-      response = await this.send(`${this.base}/api/entries`, { ...init, headers: this.headers() });
+      response = await this.send(`${this.base}/api/entries${suffix}`, { ...init, headers: this.headers() });
     } catch (error) {
       throw new AppError("storage", unreachableHint(this.base));
     }
@@ -66,7 +66,13 @@ export class HttpRemoteClient implements RemoteClient {
     return this.parse(await this.request({ method: "GET" }, "读取云端记录"));
   }
 
-  async push(entries: TimeEntry[]): Promise<TimeEntry[]> {
+  /**
+   * 写入云端。
+   *
+   * `replace` 为真时带 `?replace=1`，云端不做逐条合并、直接以这份内容为准，
+   * 用于「用本地覆盖云端」。默认是合并（「立即同步」用）。
+   */
+  async push(entries: TimeEntry[], replace = false): Promise<TimeEntry[]> {
     const payload = await this.request(
       {
         method: "POST",
@@ -74,6 +80,7 @@ export class HttpRemoteClient implements RemoteClient {
         body: JSON.stringify({ entries }),
       },
       "写入云端记录",
+      replace ? "?replace=1" : "",
     );
     return this.parse(payload);
   }

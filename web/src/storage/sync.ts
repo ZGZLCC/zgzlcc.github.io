@@ -117,15 +117,21 @@ export class SyncEngine {
       // 清不掉只是占一点空间，下次同步再试
     }
   }
-  /** 只推送本地内容：用于首次把已有记录上传到云端。 */
+  /**
+   * 用本地覆盖云端：云端变成本地内容的镜像。
+   *
+   * 带 `replace=1` 上传，云端直接以本地全量为准。
+   * **不能**把返回结果再镜像回本地：没有 replace 时 Worker 按条合并，
+   * 云端独有的记录会被合并进返回结果，镜像回来就等于顺手拉了一次
+   * ——「上传」会变成「先传后拉」。
+   */
   async push(): Promise<void> {
     if (!this.requireConfigured()) return;
     this.state.value = "syncing";
     this.message.value = "";
     try {
       const local = pruneTombstones(await this.repository.listEntries(), Date.now());
-      const merged = await this.remote().push(local);
-      await this.repository.applyRemote(merged);
+      await this.remote().push(local, true);
       emitLocalDataChanged(true);
       this.markSynced();
       await this.purgeExpiredTombstones();
@@ -135,14 +141,14 @@ export class SyncEngine {
     }
   }
 
-  /** 只从云端恢复：本地较新的改动仍会保留。 */
+  /** 用云端覆盖本地：本地变成云端内容的镜像，云端没有的记录会被删除。 */
   async pull(): Promise<void> {
     if (!this.requireConfigured()) return;
     this.state.value = "syncing";
     this.message.value = "";
     try {
       const remoteEntries = await this.remote().pull();
-      await this.repository.applyRemote(remoteEntries);
+      await this.repository.mirrorRemote(remoteEntries);
       emitLocalDataChanged(true);
       this.markSynced();
       await this.purgeExpiredTombstones();

@@ -65,9 +65,11 @@ test("完全空白的输入被拒绝，字段不全时保存为待补全", () =>
     /请至少填写一项记录内容/,
   );
   assert.equal(validateEntry(input({ endMs: null })).state, "draft");
-  assert.equal(validateEntry(input({ content: "" })).state, "draft");
   assert.equal(validateEntry(input({ tag: null })).state, "draft");
   assert.equal(validateEntry(input()).state, "completed");
+  // 内容空但有起止时间和标签，就是完整记录，只是没写做了什么，不该进待补全
+  assert.equal(validateEntry(input({ content: "" })).state, "completed");
+  assert.equal(validateEntry(input({ content: "   " })).state, "completed", "只有空白字符也算没写");
 });
 
 test("无效日期字符串被拒绝", () => {

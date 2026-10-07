@@ -325,6 +325,86 @@ function fillExpression(elementExpression, value) {
 const pickField = (legend, type) =>
   `[...document.querySelectorAll('fieldset.date-time-field')].find((node) => node.querySelector('legend').textContent.includes(${JSON.stringify(legend)}))?.querySelector('input[type=${type}]')`;
 
+/** 定位某一组「开始/结束时间」的 fieldset。 */
+const pickGroup = (legend) =>
+  `[...document.querySelectorAll('fieldset.date-time-field')].find((node) => node.querySelector('legend').textContent.includes(${JSON.stringify(legend)}))`;
+
+/**
+ * 填日期：打开自绘日历，翻到目标月份后点具体那一天。
+ * 日历是自绘的，没有原生 input[type=date] 可以赋值。
+ */
+async function fillDate(legend, value) {
+  const target = `${value.slice(0, 7)}`;
+  await evaluate(`(() => {
+    const group = ${pickGroup(legend)};
+    const trigger = group?.querySelector('.date-picker-trigger');
+    if (!trigger) throw new Error('缺少日期选择按钮');
+    trigger.click();
+    return true;
+  })()`);
+  await waitFor(`${pickGroup(legend)}?.querySelector('.date-picker-popover') !== null`, "日期面板打开");
+
+  // 翻月份：标题形如 2026年10月，对不上就点上一月／下一月
+  for (let step = 0; step < 36; step += 1) {
+    const label = await evaluate(`${pickGroup(legend)}.querySelector('.date-picker-month').textContent.trim()`);
+    const wanted = `${Number(target.slice(0, 4))}年${Number(target.slice(5, 7))}月`;
+    if (label === wanted) break;
+    const forward = label < wanted;
+    await evaluate(`${pickGroup(legend)}.querySelector('[aria-label="${forward ? "下个月" : "上个月"}"]').click()`);
+    await sleep(80);
+  }
+
+  const clicked = await evaluate(`(() => {
+    const group = ${pickGroup(legend)};
+    const day = group.querySelector('[data-date="${value}"]');
+    if (!day) throw new Error('日历里没有这一天');
+    day.click();
+    return true;
+  })()`);
+  if (!clicked) throw new Error(`日期未选中：${legend} → ${value}`);
+  await waitFor(`${pickGroup(legend)}?.querySelector('.date-picker-popover') === null`, "日期面板关闭");
+}
+
+/**
+ * 填时间：打开滚动选择器，在两列竖条里点中目标时与分。
+ * 列表渲染三份，所以取中间那份的按钮，避免点到外侧那份。
+ */
+async function fillTime(legend, value) {
+  const wantHour = JSON.stringify(value.slice(0, 2));
+  const wantMinute = JSON.stringify(value.slice(3, 5));
+  const clicked = await evaluate(`(() => {
+    const group = ${pickGroup(legend)};
+    const trigger = group?.querySelector('.time-field-trigger');
+    if (!trigger) throw new Error('缺少时间选择按钮');
+    trigger.click();
+    return true;
+  })()`);
+  if (!clicked) throw new Error(`时间面板打不开：${legend}`);
+  await waitFor(`${pickGroup(legend)}?.querySelector('.time-wheel-list') !== null`, "时间面板打开");
+
+  const applied = await evaluate(`(() => {
+    const group = ${pickGroup(legend)};
+    const lists = group.querySelectorAll('.time-wheel-list');
+    if (lists.length < 2) throw new Error('时间选择器缺少两列');
+    const pickFrom = (list, wanted, size) => {
+      const items = [...list.querySelectorAll('.time-wheel-item')];
+      const middle = items.slice(size, size * 2);
+      const target = middle.find((node) => node.textContent.trim() === wanted);
+      if (!target) throw new Error('列表里没有 ' + wanted);
+      target.click();
+      return true;
+    };
+    pickFrom(lists[0], ${wantHour}, 24);
+    pickFrom(lists[1], ${wantMinute}, 60);
+    return true;
+  })()`);
+  if (!applied) throw new Error(`时间未选中：${legend}`);
+  // 触发按钮的文本要等 Vue 把新值回填后才会变，得单独读一次
+  await sleep(200);
+  const shown = await evaluate(`${pickGroup(legend)}.querySelector('.time-field-trigger span').textContent.trim()`);
+  if (shown !== value) throw new Error(`时间未写入：${legend} 期望 ${value}，实际 ${shown}`);
+}
+
 /** 打印页面关键状态，便于定位实测失败的位置。 */
 async function dumpState(label) {
   if (!process.env.TIMEWEB_DEBUG) return;
@@ -669,24 +749,16 @@ async function main() {
     await waitFor("document.querySelector('#form-title').textContent === '编辑记录'", "表单进入编辑态");
     const recordDate = await evaluate("new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10)");
     const week = weekOf(recordDate);
+    await fillDate("开始时间", recordDate);
+    await fillDate("结束时间", recordDate);
+    await fillTime("开始时间", "09:00");
+    await fillTime("结束时间", "10:30");
     await evaluate(`(() => {
       const field = document.querySelector('.form-panel textarea');
-      const setValue = (target, value) => {
-        if (!target) throw new Error('表单缺少目标输入框');
-        const prototype = target instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
-        Object.getOwnPropertyDescriptor(prototype, 'value').set.call(target, value);
-        target.dispatchEvent(new Event('input', { bubbles: true }));
-        target.dispatchEvent(new Event('change', { bubbles: true }));
-      };
-      const pick = (legend) => [...document.querySelectorAll('fieldset.date-time-field')]
-        .find((node) => node.querySelector('legend').textContent.includes(legend));
-      const start = pick('开始时间');
-      const end = pick('结束时间');
-      setValue(start.querySelector('input[type=date]'), ${JSON.stringify(recordDate)});
-      setValue(end.querySelector('input[type=date]'), ${JSON.stringify(recordDate)});
-      setValue(start.querySelector('input[type=time]'), '09:00');
-      setValue(end.querySelector('input[type=time]'), '10:30');
-      setValue(field, '浏览器实测记录');
+      if (!field) throw new Error('表单缺少内容输入框');
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(field, '浏览器实测记录');
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      field.dispatchEvent(new Event('change', { bubbles: true }));
       return true;
     })()`);
     await dumpState("填充表单后");
@@ -723,23 +795,16 @@ async function main() {
     );
 
     // 4. 重叠校验阻止保存
+    await fillDate("开始时间", recordDate);
+    await fillDate("结束时间", recordDate);
+    await fillTime("开始时间", "10:00");
+    await fillTime("结束时间", "11:00");
     await evaluate(`(() => {
-      const setValue = (target, value) => {
-        if (!target) throw new Error('表单缺少目标输入框');
-        const prototype = target instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
-        Object.getOwnPropertyDescriptor(prototype, 'value').set.call(target, value);
-        target.dispatchEvent(new Event('input', { bubbles: true }));
-        target.dispatchEvent(new Event('change', { bubbles: true }));
-      };
-      const pick = (legend) => [...document.querySelectorAll('fieldset.date-time-field')]
-        .find((node) => node.querySelector('legend').textContent.includes(legend));
-      const start = pick('开始时间');
-      const end = pick('结束时间');
-      setValue(start.querySelector('input[type=date]'), ${JSON.stringify(recordDate)});
-      setValue(end.querySelector('input[type=date]'), ${JSON.stringify(recordDate)});
-      setValue(start.querySelector('input[type=time]'), '10:00');
-      setValue(end.querySelector('input[type=time]'), '11:00');
-      setValue(document.querySelector('.form-panel textarea'), '重叠测试');
+      const field = document.querySelector('.form-panel textarea');
+      if (!field) throw new Error('表单缺少内容输入框');
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(field, '重叠测试');
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      field.dispatchEvent(new Event('change', { bubbles: true }));
       return true;
     })()`);
     await evaluate(`(() => {
@@ -1246,7 +1311,7 @@ function overflowProbe() {
 function smallTargetProbe(minSize) {
   return `(() => {
     const small = [];
-    for (const node of document.querySelectorAll('button, input[type=date], input[type=text], input[type=url], a[href]')) {
+    for (const node of document.querySelectorAll('button, input[type=text], input[type=url], select, a[href]')) {
       const rect = node.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) continue;
       const style = getComputedStyle(node);

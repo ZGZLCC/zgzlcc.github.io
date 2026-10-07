@@ -15,16 +15,6 @@
   white-space: nowrap;
 }
 
-.date-jump-field input {
-  min-height: 36px;
-  padding: 5px 8px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  color: var(--ink);
-  background: var(--panel);
-  font: inherit;
-}
-
 .date-jump-reset {
   white-space: nowrap;
 }

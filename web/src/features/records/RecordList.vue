@@ -4,7 +4,7 @@ import type { TimeEntry } from "../../api";
 import DateJump from "../../components/DateJump.vue";
 import { recordsOnDay } from "../../day-range";
 import { tagColor, tagLabel } from "../../tags";
-import { formatBeijingTime, toBeijingInput } from "../../time";
+import { formatBeijingTime } from "../../time";
 
 const props = defineProps<{ pending: TimeEntry[]; completed: TimeEntry[]; busy: boolean }>();
 const emit = defineEmits<{
@@ -14,6 +14,11 @@ const emit = defineEmits<{
 
 function title(entry: TimeEntry): string {
   return entry.content || "待补全记录";
+}
+
+/** 正文：内容可以是空的（有起止时间和标签就算完整记录），空的时候给一句说明。 */
+function body(entry: TimeEntry): string {
+  return entry.content || "（未填写内容）";
 }
 
 function displayTime(timestamp: number | null, date: string | null): string {
@@ -26,16 +31,9 @@ const selectedDate = ref("");
 const jumpDate = ref("");
 const dayEntries = computed(() => recordsOnDay(props.completed, selectedDate.value));
 
-/**
- * 起止时间。未选日期时另给出日期前缀，便于在「全部」视图里区分是哪一天；
- * 前缀单独成 span，窄屏可以隐藏——日期本来就在范围里，移动端不必显示两遍。
- */
+/** 起止时间，例如 `2026-10-06 18:36 → 2026-10-06 19:19`。 */
 function timeRange(entry: TimeEntry): string {
   return `${displayTime(entry.startMs, entry.startDate)} → ${displayTime(entry.endMs, entry.endDate)}`;
-}
-
-function datePrefix(entry: TimeEntry): string {
-  return selectedDate.value || entry.startMs === null ? "" : toBeijingInput(entry.startMs).slice(0, 10);
 }
 
 /** 与待补全一致：最多完整显示五条，其余在卡片内滚动。 */
@@ -107,12 +105,10 @@ onBeforeUnmount(() => window.removeEventListener("resize", sizeHistory));
         <article v-for="entry in dayEntries" :key="entry.id" class="record-card">
           <div class="record-main">
             <div class="record-title-row">
-              <h4 class="history-time">
-                <span v-if="datePrefix(entry)" class="history-date-prefix">{{ datePrefix(entry) }} </span>{{ timeRange(entry) }}
-              </h4>
+              <h4 class="history-time">{{ timeRange(entry) }}</h4>
               <span v-if="entry.tag" :class="`tag tag-${tagColor(entry.tag)}`">{{ tagLabel(entry.tag) }}</span>
             </div>
-            <p class="history-content">{{ entry.content }}</p>
+            <p class="history-content">{{ body(entry) }}</p>
           </div>
           <div class="record-actions">
             <button class="button button-quiet" type="button" :disabled="busy" @click="emit('edit', entry)">编辑</button>

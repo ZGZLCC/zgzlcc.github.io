@@ -8,7 +8,7 @@
     "preview": "vite preview --configLoader native --host 127.0.0.1 --port 5181 --strictPort",
     "typecheck": "vue-tsc --noEmit",
     "typecheck:worker": "tsc --noEmit -p worker/tsconfig.json",
-    "test:time": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs --test scripts/time.test.mjs scripts/day-range.test.mjs scripts/core.test.mjs scripts/sync.test.mjs scripts/worker.test.mjs scripts/offline.test.mjs",
+    "test:time": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs --test scripts/time.test.mjs scripts/day-range.test.mjs scripts/core.test.mjs scripts/sync.test.mjs scripts/worker.test.mjs scripts/offline.test.mjs scripts/calendar.test.mjs",
     "test:dist": "node scripts/dist.test.mjs",
     "test:browser": "node scripts/browser-check.mjs",
     "verify": "npm run typecheck && npm run typecheck:worker && npm run test:time && npm run build && npm run test:dist",

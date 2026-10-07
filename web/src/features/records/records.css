@@ -82,16 +82,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/*
- * 窄屏隐藏日期前缀：起止范围里已经带了日期，前缀只会让标题折成两行、白占一行高度。
- * 桌面端保留前缀，方便在「全部」视图里区分记录属于哪一天。
- */
-@media (max-width: 560px) {
-  .history-date-prefix {
-    display: none;
-  }
-}
-
 .tag {
   display: inline-block;
   padding: 3px 7px;
@@ -207,7 +197,8 @@
   .dashboard-grid {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
-    grid-template-areas: "quick" "manual" "pending" "history";
+    /* 手机单列：待补全紧跟在开始打卡之后，手工记录表单排在它下面 */
+    grid-template-areas: "quick" "pending" "manual" "history";
     gap: 16px;
   }
 

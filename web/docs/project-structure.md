@@ -126,6 +126,7 @@ web/
 | `scripts/mock-worker.mjs` | 浏览器实测用的假 Worker：实现相同接口与合并规则，并可提供测试用备份文件。 |
 | `scripts/time.test.mjs` | 检查北京时间转换、日期边界、整分钟时长显示、闰日与跨年周跳转及标题格式。 |
 | `scripts/day-range.test.mjs` | 检查北京时间单日区间、跨 UTC 日界的日期归属、跨午夜记录归属与空日期不过滤。 |
+| `scripts/calendar.test.mjs` | 检查日期选择器的日历计算：周一起始、42 格连续、闰年与二月天数、非法日期、跨月跨年加减。 |
 | `scripts/dist.test.mjs` | 检查构建产物存在、资源引用为相对路径、不含桌面版依赖且包含 IndexedDB 实现。 |
 | `scripts/browser-check.mjs` | 用 CDP 驱动无头 Edge／Chrome 实测页面：自行启停静态服务与假 Worker，走完记录、周视图、导出、备份恢复与云端同步链路，并用视口模拟在 375／390／360 三种手机宽度下检查横向溢出、点击目标尺寸与按钮换行，逐项打印结果。 |
 | `scripts/ensure-ps1-bom.mjs` | 给 PowerShell 脚本补 UTF-8 BOM 并调用 PowerShell 解析器做语法检查；Windows PowerShell 5.1 缺少 BOM 时会按系统代码页读取，中文注释会导致语法报错。 |
@@ -171,11 +172,11 @@ web/
 | --- | --- |
 | `src/storage/repository.ts` | 定义仓储接口与记录编号生成入口，覆盖列表、保存、删除、打卡、整体替换与同步写入。 |
 | `src/storage/idb.ts` | IndexedDB 连接与版本升级、创建时间读写、记录读取与排序。 |
-| `src/storage/indexeddb.ts` | 仓储实现：保存时同流程做重叠校验、删除写入墓碑、同步结果只覆盖更旧的本地记录。 |
+| `src/storage/indexeddb.ts` | 仓储实现：保存时同流程做重叠校验、删除写入墓碑、`applyRemote` 只覆盖更旧的本地记录、`mirrorRemote` 用快照整体覆盖并把快照里没有的记录打上删除标记。 |
 | `src/storage/mutex.ts` | 串行化同一标签页内的写操作，避免读—判—写互相穿插。 |
 | `src/storage/remote-settings.ts` | 云端地址与口令的本地读写、云端交互接口与同步状态类型。 |
 | `src/storage/remote.ts` | HTTP 客户端：带口令请求 Worker，把 401、非 2xx 与网络失败转成可读提示。 |
-| `src/storage/sync.ts` | 同步引擎：防抖推送、启动静默同步、手动上传与恢复、离线状态与失败重试。 |
+| `src/storage/sync.ts` | 同步引擎：防抖推送、启动静默同步、离线状态与失败重试；`sync` 双向合并，`push` 用本地覆盖云端，`pull` 用云端覆盖本地（后两者走 `mirrorRemote`，会为被替换掉的记录留下墓碑，删除才能传到其他设备）。 |
 | `src/storage/events.ts` | 本地数据变化的事件广播；写入成功后通知各页面刷新，并标记变化是否来自云端写入。 |
 | `src/storage/network-hint.ts` | 网络不可达时的可操作提示；单独成模块以便无依赖地测试。 |
 | `src/storage/backup-reminder.ts` | 上次导出备份时间的读写、单项过期判定，以及“同步或导出是否已超过 7 天”的提醒判断。 |
@@ -197,6 +198,11 @@ web/
 | `src/theme.css` | 暗色主题的画布、卡片、表单、边框、文字和标签设计变量。 |
 | `src/web.css` | 网站版新增的操作按钮同行布局（窄屏换行成每行两个）、表单堆叠与导出提示样式。 |
 | `src/components/BackupReminder.vue` | 居中的备份提醒弹窗：距上次同步或上次导出超过 7 天时弹出，可跳到设置页导出或忽略当天；未配置云端同步时只看导出时间。 |
+| `src/components/DatePicker.vue` | 自绘日期选择：触发按钮显示 `YYYY-MM-DD`，弹出七列日历（周一开头、固定 6 行、今天带边框、选中加深加粗），底部只有“今天”按钮，不提供手输搜索。 |
+| `src/components/DateTimeField.vue` | 一组「日期 + 时间」：日期用 `DatePicker`，时间用 `TimeWheel`，触发按钮显示 `HH:MM`（未设置时显示 `--:--`），可一键清空，打开时默认落在当前时刻。 |
+| `src/components/TimeWheel.vue` | 滚动时间选择器：小时与分钟两列竖条，列表渲染三份并在滚到外侧时平移回中间，做出无限循环（59 后面是 0、23 后面是 0）；上下内边距等于一条选中带高度，让首末项也能滚到正中；支持方向键与点击。 |
+| `src/components/calendar.ts` | 日历纯计算：月份网格、周一起始、加减天／月（日号夹到目标月）、非法日期拒绝。 |
+| `src/components/date-time.css` | 日期选择与时间下拉的样式，沿用项目的边框、圆角与配色变量。 |
 | `src/components/DateJump.vue` | 复用“跳转日期”输入与可选“全部”按钮，向父组件抛出日期选择与恢复全部事件。 |
 | `src/components/date-jump.css` | 跳转日期标签、日期输入和恢复按钮的对齐与控件样式。 |
 | `src/features/records/RecordsPage.vue` | 页面状态协调：读取记录、独立开始时间打卡、常驻手动表单、保存、居中删除确认、错误反馈、保存后触发同步，并在数据变化时重新读取。 |

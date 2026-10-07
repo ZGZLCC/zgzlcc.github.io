@@ -52,8 +52,9 @@ export function validateEntry(input: SaveEntryInput): ValidatedEntry {
   if (empty) {
     throw new AppError("validation", "请至少填写一项记录内容");
   }
-  const completed =
-    input.startMs !== null && input.endMs !== null && content !== "" && input.tag !== null;
+  // 内容可以是空的：有起止时间和标签就算已是完整记录，
+  // 只是「没写做了什么」而已，不该一直挂在待补全里。
+  const completed = input.startMs !== null && input.endMs !== null && input.tag !== null;
   return {
     id: input.id,
     startMs: input.startMs,

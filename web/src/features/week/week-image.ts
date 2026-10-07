@@ -103,8 +103,8 @@ function drawEvents(context: CanvasRenderingContext2D, week: WeekView) {
       context.fillStyle = "#080808";
       if (height >= 22) {
         context.font = '14px "Microsoft YaHei", "Segoe UI", sans-serif';
-        // 同上：靠裁剪而不是压缩来限制宽度
-        context.fillText(entry?.content ?? "记录", x + 13, y + 18);
+        // 同上：靠裁剪而不是压缩来限制宽度。内容可以为空，空着就什么都不画
+        context.fillText(entry?.content ?? "", x + 13, y + 18);
       }
       if (height >= 42) {
         context.fillStyle = "#626262";

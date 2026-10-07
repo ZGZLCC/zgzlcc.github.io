@@ -170,6 +170,43 @@ export class IndexedDbRepository implements TimeRepository {
   }
 
   /**
+   * 用快照整体覆盖本地，返回写入条数。快照里没有的记录会被打上删除标记。
+   *
+   * 与 applyRemote 的区别：那个逐条比较、只写更新的，本地多出来的不动；
+   * 这个让本地变成快照的镜像。墓碑会被推回云端，删除才会传到其他设备。
+   */
+  async mirrorRemote(entries: TimeEntry[]): Promise<number> {
+    return withWriteLock(async () => {
+      try {
+        const db = await this.open();
+        const existing = await readAllEntries(db);
+        const incoming = new Map(entries.map((entry) => [entry.id, entry]));
+        const now = nowMs();
+        const transaction = db.transaction(ENTRY_STORE, "readwrite");
+        const store = transaction.objectStore(ENTRY_STORE);
+        let written = 0;
+
+        for (const entry of entries) {
+          store.put(entry);
+          written += 1;
+        }
+        // 快照里没有的，或本地已有墓碑的，都打上删除标记
+        for (const entry of existing) {
+          if (incoming.has(entry.id)) continue;
+          if (entry.deletedAt !== null) continue;
+          store.put({ ...entry, deletedAt: now, updatedAt: now });
+        }
+
+        await transactionDone(transaction);
+        return written;
+      } catch (error) {
+        if (error instanceof AppError) throw error;
+        throw storageError("覆盖本地数据失败", error);
+      }
+    });
+  }
+
+  /**
    * 真正删掉过期的删除墓碑。
    *
    * 以前只做了「过滤返回值」，数据库里的墓碑一条都没删，于是本地和云端都无限累积。

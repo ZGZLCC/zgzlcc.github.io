@@ -25,7 +25,9 @@ function selectEntry(id: string) {
 function eventLabel(segment: WeekSegment): string {
   const entry = entriesById.value.get(segment.entryId);
   if (!entry) return "查看记录详情";
-  return `${entry.content}，${formatBeijingTime(segment.startMs).slice(11)} 至 ${formatBeijingTime(segment.endMs).slice(11)}，${tagLabel(entry.tag!)}`;
+  const time = `${formatBeijingTime(segment.startMs).slice(11)} 至 ${formatBeijingTime(segment.endMs).slice(11)}`;
+  // 内容可以是空的，空着就不念它，免得读屏先读出一个逗号
+  return [entry.content, time, tagLabel(entry.tag!)].filter(Boolean).join("，");
 }
 
 </script>

@@ -3,6 +3,7 @@ import App from "./App.vue";
 import { sync } from "./storage";
 import "./style.css";
 import "./components/date-jump.css";
+import "./components/date-time.css";
 import "./features/records/records.css";
 import "./features/records/records-layout.css";
 import "./features/week/week.css";

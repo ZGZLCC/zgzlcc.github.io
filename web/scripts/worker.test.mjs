@@ -224,6 +224,102 @@ test("索引为空时回退扫描一次，把老码补进索引", async () => {
   assert.ok((kv.store.get("index/codes") ?? "").includes("历史遗留"));
 });
 
+test("replace=1 时云端以这份内容为准，多出来的记录被丢掉", async () => {
+  const kv = createKv();
+  const code = await createCode(kv);
+
+  // 先让云端有三条
+  const withThree = await (
+    await worker.fetch(
+      request("/api/entries", {
+        method: "POST",
+        headers: codeHeaders(code),
+        body: { entries: [entry("keep-a", 1), entry("keep-b", 2), entry("extra", 3)] },
+      }),
+      env(kv),
+    )
+  ).json();
+  assert.equal(withThree.entries.length, 3);
+
+  // 再用 replace=1 只推两条
+  const replaced = await (
+    await worker.fetch(
+      request("/api/entries?replace=1", {
+        method: "POST",
+        headers: codeHeaders(code),
+        body: { entries: [entry("keep-a", 1), entry("keep-b", 2)] },
+      }),
+      env(kv),
+    )
+  ).json();
+
+  assert.deepEqual(
+    replaced.entries.map((item) => item.id).sort(),
+    ["keep-a", "keep-b"],
+    "云端多出来的 extra 应当被替换掉",
+  );
+
+  // 落盘的也是两条
+  const stored = await (await worker.fetch(request("/api/entries", { headers: codeHeaders(code) }), env(kv))).json();
+  assert.deepEqual(stored.entries.map((item) => item.id).sort(), ["keep-a", "keep-b"]);
+});
+
+test("不带 replace 时仍然是逐条合并，云端多出来的记录不受影响", async () => {
+  const kv = createKv();
+  const code = await createCode(kv);
+
+  await worker.fetch(
+    request("/api/entries", {
+      method: "POST",
+      headers: codeHeaders(code),
+      body: { entries: [entry("keep-a", 1), entry("extra", 3)] },
+    }),
+    env(kv),
+  );
+  const merged = await (
+    await worker.fetch(
+      request("/api/entries", {
+        method: "POST",
+        headers: codeHeaders(code),
+        body: { entries: [entry("keep-a", 1)] },
+      }),
+      env(kv),
+    )
+  ).json();
+
+  assert.deepEqual(
+    merged.entries.map((item) => item.id).sort(),
+    ["extra", "keep-a"],
+    "默认合并必须保留云端已有的 extra，这是「立即同步」依赖的行为",
+  );
+});
+
+test("replace=1 时墓碑仍然有效", async () => {
+  const kv = createKv();
+  const code = await createCode(kv);
+  const now = Date.now();
+
+  const replaced = await (
+    await worker.fetch(
+      request("/api/entries?replace=1", {
+        method: "POST",
+        headers: codeHeaders(code),
+        body: {
+          entries: [
+            entry("alive", 1),
+            entry("gone", 2, { deletedAt: now - 86_400_000, updatedAt: now - 86_400_000 }),
+          ],
+        },
+      }),
+      env(kv),
+    )
+  ).json();
+
+  const gone = replaced.entries.find((item) => item.id === "gone");
+  assert.ok(gone?.deletedAt, "墓碑必须保留，否则其他设备会把已删记录当新记录");
+  assert.equal(replaced.entries.filter((item) => !item.deletedAt).length, 1);
+});
+
 test("保留期内的墓碑会保留，过期墓碑在写入时被丢掉", async () => {
   const kv = createKv();
   const code = await createCode(kv);

@@ -136,7 +136,13 @@ async function handleEntries(request: Request, env: Env, cors: Record<string, st
   const stored = await readEntries(env, code);
   // 写入时顺手丢掉过期墓碑：保留期内要留着让离线设备知道自己删过什么，
   // 过期后就没用了，不清理会一直堆在 KV 里（以前两端都没真正删除过）。
-  const merged = pruneTombstones(mergeEntries(incoming, stored.entries), Date.now());
+  //
+  // `?replace=1` 是「用本地覆盖云端」用的：不做逐条合并，直接把上传的内容
+  // 当成云端的新全量，云端多出来的记录随之消失。默认仍是合并。
+  const replace = new URL(request.url).searchParams.get("replace") === "1";
+  const merged = replace
+    ? pruneTombstones(incoming, Date.now())
+    : pruneTombstones(mergeEntries(incoming, stored.entries), Date.now());
   if (merged.length > MAX_ENTRIES_PER_CODE) {
     throw new Error(`记录数超过单码上限 ${MAX_ENTRIES_PER_CODE} 条，请先导出备份并清理历史记录`);
   }

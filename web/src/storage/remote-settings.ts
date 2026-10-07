@@ -5,7 +5,8 @@ export interface RemoteClient {
   /** 读取云端记录的当前修订号，用于判断是否需要真正传输。 */
   revision(): Promise<number>;
   pull(): Promise<TimeEntry[]>;
-  push(entries: TimeEntry[]): Promise<TimeEntry[]>;
+  /** `replace` 为真时云端以这份内容为准（覆盖），否则逐条合并。 */
+  push(entries: TimeEntry[], replace?: boolean): Promise<TimeEntry[]>;
 }
 
 /** 同步状态，供设置页展示。 */

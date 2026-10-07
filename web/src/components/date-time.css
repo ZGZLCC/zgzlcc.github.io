@@ -1,0 +1,272 @@
+/* 自绘日期选择与时间下拉；沿用项目的边框、圆角与配色变量。 */
+
+.date-picker {
+  position: relative;
+}
+
+.date-picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--field-border);
+  border-radius: 4px;
+  color: var(--ink);
+  background: var(--panel);
+  font-size: 14px;
+  text-align: left;
+}
+
+.date-picker-trigger:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.date-picker-trigger .placeholder {
+  color: var(--muted);
+}
+
+.date-picker-icon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+
+/* 历史标题栏里的「跳转日期」用紧凑尺寸，与原来的日期框一致 */
+.date-picker.dense .date-picker-trigger {
+  width: auto;
+  min-height: 36px;
+  padding: 5px 8px;
+  border-color: var(--line);
+  font-size: 13px;
+}
+
+.date-picker-popover {
+  /* 坐标由 DatePicker 量出来写进行内样式；这里不给 left/width，
+     免得又依赖「包含块有多宽」——周视图的「跳转日期」只有 100 多像素，
+     靠它展开必然从右边缘伸出去。宽屏窄屏走同一条路径。 */
+  position: fixed;
+  z-index: 10;
+  top: 0;
+  left: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgb(8 8 8 / 12%);
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.date-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.date-picker-month {
+  font-weight: 600;
+}
+
+.date-picker-step {
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--ink);
+  background: transparent;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.date-picker-step:hover {
+  background: var(--hover);
+}
+
+/* 星期表头与日期格共用同一套七列，保证对齐 */
+.date-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.date-picker-weekday {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.date-picker-day {
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--ink);
+  background: transparent;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.date-picker-day:hover {
+  background: var(--hover);
+}
+
+.date-picker-day.outside {
+  color: var(--muted);
+}
+
+.date-picker-day.today {
+  border-color: var(--field-border);
+  font-weight: 600;
+}
+
+.date-picker-day.selected {
+  border-color: var(--ink);
+  background: var(--surface);
+  font-weight: 600;
+}
+
+.date-picker-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.date-picker-foot .button {
+  min-height: 32px;
+  padding: 4px 10px;
+  border-color: var(--field-border);
+  font-size: 13px;
+}
+
+/* 时间：触发按钮 + 弹出滚动选择器（小时、分钟两列，循环滚动） */
+.time-field {
+  position: relative;
+}
+
+.time-field-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--field-border);
+  border-radius: 4px;
+  color: var(--ink);
+  background: var(--panel);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+
+.time-field-trigger:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.time-field-trigger .placeholder {
+  color: var(--muted);
+}
+
+.time-field-icon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+
+.time-field-popover {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 6px);
+  left: 0;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgb(8 8 8 / 12%);
+}
+
+/* 两列竖条：中间一条高亮带表示当前选中 */
+.time-wheel-columns {
+  position: relative;
+  display: flex;
+  gap: 4px;
+}
+
+.time-wheel-band {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 40px;
+  transform: translateY(-50%);
+  border: 1px solid var(--field-border);
+  border-radius: 4px;
+  background: var(--surface);
+  pointer-events: none;
+}
+
+.time-wheel-list {
+  position: relative;
+  width: 52px;
+  height: 200px;
+  overflow-y: auto;
+  padding: 80px 0;
+  scrollbar-width: none;
+  /* 关掉滚动锚定：列表会被程序平移回中间那份，锚定会跟着改 scrollTop 打架 */
+  overflow-anchor: none;
+}
+
+.time-wheel-list::-webkit-scrollbar {
+  display: none;
+}
+
+.time-wheel-item {
+  display: block;
+  width: 100%;
+  height: 40px;
+  border: 0;
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-wheel-item.active {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* 窄屏：日历格收紧，能装进「日期 | 时间」两列里的日期列。
+   定位不在这里管——见 .date-picker-popover 的说明。 */
+@media (max-width: 560px) {
+  .date-picker-popover {
+    padding: 10px;
+  }
+
+  .date-picker-day {
+    height: 30px;
+    font-size: 12px;
+  }
+
+  .date-picker-weekday {
+    height: 22px;
+    font-size: 11px;
+  }
+
+  .date-picker-step {
+    width: 24px;
+    height: 24px;
+  }
+}

@@ -1,6 +1,5 @@
 const BEIJING_OFFSET_MS = 8 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 
 export function toBeijingInput(timestampMs: number): string {
   return new Date(timestampMs + BEIJING_OFFSET_MS).toISOString().slice(0, 16);
@@ -42,13 +41,13 @@ export function shiftDate(date: string, amount: number): string {
   return new Date(utcMidnight + amount * DAY_MS).toISOString().slice(0, 10);
 }
 
+/** 日期标题，例如 `10月6日`；不带星期。 */
 export function formatDateHeading(date: string): string {
   const [, month, day] = date.split("-").map(Number);
-  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
-  return `${month}月${day}日 ${WEEKDAYS[weekday]}`;
+  return `${month}月${day}日`;
 }
 
-/** 完整日期标题，例如 `2026年10月4日 周日`。 */
+/** 完整日期标题，例如 `2026年10月6日`。 */
 export function formatDateLabel(date: string): string {
   return `${date.slice(0, 4)}年${formatDateHeading(date)}`;
 }

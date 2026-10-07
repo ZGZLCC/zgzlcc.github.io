@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import type { SaveEntryInput, TimeEntry } from "../../api";
+import DateTimeField from "../../components/DateTimeField.vue";
 import { TAGS, type EntryTag } from "../../tags";
 import { beijingToday, fromBeijingInput, toBeijingInput } from "../../time";
 
@@ -34,11 +35,18 @@ function syncDate(source: "start" | "end") {
   if (source === "end" && endDate.value && !startDate.value) startDate.value = endDate.value;
 }
 
-function syncTime(source: "start" | "end") {
-  if (source === "start" && startTime.value && !startDate.value) startDate.value = beijingToday();
-  if (source === "end" && endTime.value && !endDate.value) endDate.value = beijingToday();
-  syncDate(source);
-}
+// 选好日期或时间后补全另一侧：原来靠原生输入框的 change 事件触发，
+// 现在选择器只更新值，所以改成盯值。
+watch(startDate, () => syncDate("start"));
+watch(endDate, () => syncDate("end"));
+watch(startTime, (value) => {
+  if (value && !startDate.value) startDate.value = beijingToday();
+  syncDate("start");
+});
+watch(endTime, (value) => {
+  if (value && !endDate.value) endDate.value = beijingToday();
+  syncDate("end");
+});
 
 function timestamp(date: string, time: string, original: number | null): number | null {
   if (!date || !time) return null;
@@ -76,16 +84,18 @@ function submit() {
 
     <form class="record-form" novalidate @submit.prevent="submit">
       <div class="form-grid">
-        <fieldset class="date-time-field">
-          <legend>开始时间（北京时间）</legend>
-          <label class="field"><span>日期</span><input v-model="startDate" type="date" @change="syncDate('start')" /></label>
-          <label class="field"><span>时间</span><input v-model="startTime" type="time" @change="syncTime('start')" /></label>
-        </fieldset>
-        <fieldset class="date-time-field">
-          <legend>结束时间（北京时间）</legend>
-          <label class="field"><span>日期</span><input v-model="endDate" type="date" @change="syncDate('end')" /></label>
-          <label class="field"><span>时间</span><input v-model="endTime" type="time" @change="syncTime('end')" /></label>
-        </fieldset>
+        <DateTimeField
+          v-model:date="startDate"
+          v-model:time="startTime"
+          label="开始时间（北京时间）"
+          :disabled="busy"
+        />
+        <DateTimeField
+          v-model:date="endDate"
+          v-model:time="endTime"
+          label="结束时间（北京时间）"
+          :disabled="busy"
+        />
       </div>
       <label class="field">
         <span>事情内容</span>
