@@ -14,7 +14,7 @@
 - 只使用浏览器标准能力：IndexedDB 存储、Canvas 导出、Blob 下载、`File.text()` 读取、`fetch` 访问自建 Worker。
 - 不引入新的运行时依赖；新增依赖前先确认标准库与现有依赖无法满足需求。
 - 构建产物必须是相对路径可用的静态文件，保证既能本地打开，也能放在任意子目录部署。
-- `worker/` 是可选的自建同步后端，只用 Cloudflare Workers 免费版能力（D1 绑定、Web Crypto、标准 `Request`／`Response`）；不引入 Worker 侧框架。
+- `worker/` 是可选的自建同步后端，只用 Cloudflare Workers 免费版能力（KV 绑定、Web Crypto、标准 `Request`／`Response`）；不引入 Worker 侧框架。
 
 ## 模块化与代码长度
 

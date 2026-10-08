@@ -17,9 +17,11 @@ web/
 │  └─ icon.svg
 ├─ scripts/
 │  ├─ browser-check.mjs
+│  ├─ calendar.test.mjs
 │  ├─ core.test.mjs
 │  ├─ day-range.test.mjs
 │  ├─ dist.test.mjs
+│  ├─ ensure-ps1-bom.mjs
 │  ├─ mock-worker.mjs
 │  ├─ offline.test.mjs
 │  ├─ sync.test.mjs
@@ -59,7 +61,12 @@ web/
    ├─ components/
    │  ├─ BackupReminder.vue
    │  ├─ DateJump.vue
-   │  └─ date-jump.css
+   │  ├─ DatePicker.vue
+   │  ├─ DateTimeField.vue
+   │  ├─ TimeWheel.vue
+   │  ├─ calendar.ts
+   │  ├─ date-jump.css
+   │  └─ date-time.css
    ├─ core/
    │  ├─ date.ts
    │  ├─ entries.ts
@@ -199,10 +206,10 @@ web/
 | `src/web.css` | 网站版新增的操作按钮同行布局（窄屏换行成每行两个）、表单堆叠与导出提示样式。 |
 | `src/components/BackupReminder.vue` | 居中的备份提醒弹窗：距上次同步或上次导出超过 7 天时弹出，可跳到设置页导出或忽略当天；未配置云端同步时只看导出时间。 |
 | `src/components/DatePicker.vue` | 自绘日期选择：触发按钮显示 `YYYY-MM-DD`，弹出七列日历（周一开头、固定 6 行、今天带边框、选中加深加粗），底部只有“今天”按钮，不提供手输搜索。 |
-| `src/components/DateTimeField.vue` | 一组「日期 + 时间」：日期用 `DatePicker`，时间用 `TimeWheel`，触发按钮显示 `HH:MM`（未设置时显示 `--:--`），可一键清空，打开时默认落在当前时刻。 |
+| `src/components/DateTimeField.vue` | 一组「日期 + 时间」：日期用 `DatePicker`，时间用 `TimeWheel`，触发按钮显示 `HH:MM`（未设置时显示 `--:--`），打开时默认落在当前时刻。 |
 | `src/components/TimeWheel.vue` | 滚动时间选择器：小时与分钟两列竖条，列表渲染三份并在滚到外侧时平移回中间，做出无限循环（59 后面是 0、23 后面是 0）；上下内边距等于一条选中带高度，让首末项也能滚到正中；支持方向键与点击。 |
 | `src/components/calendar.ts` | 日历纯计算：月份网格、周一起始、加减天／月（日号夹到目标月）、非法日期拒绝。 |
-| `src/components/date-time.css` | 日期选择与时间下拉的样式，沿用项目的边框、圆角与配色变量。 |
+| `src/components/date-time.css` | 日期选择与时间滚轮的样式，沿用项目的边框、圆角与配色变量。 |
 | `src/components/DateJump.vue` | 复用“跳转日期”输入与可选“全部”按钮，向父组件抛出日期选择与恢复全部事件。 |
 | `src/components/date-jump.css` | 跳转日期标签、日期输入和恢复按钮的对齐与控件样式。 |
 | `src/features/records/RecordsPage.vue` | 页面状态协调：读取记录、独立开始时间打卡、常驻手动表单、保存、居中删除确认、错误反馈、保存后触发同步，并在数据变化时重新读取。 |

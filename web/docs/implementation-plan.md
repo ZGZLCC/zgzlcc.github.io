@@ -14,7 +14,7 @@
 | 导出 | Canvas + Blob 下载、JSON 备份 | 周记录 PNG 与全量记录备份 |
 | 构建 | npm + Vite，提交锁文件 | 类型检查、测试与静态产物构建 |
 
-只使用浏览器标准能力与一个自建 Worker，不引入运行时依赖。技术依据：[Vue TypeScript](https://vuejs.org/guide/typescript/overview.html)、[IndexedDB](https://developer.mozilla.org/docs/Web/API/IndexedDB_API)、[Vite 静态部署](https://vite.dev/guide/static-deploy)、[Cloudflare D1 定价](https://developers.cloudflare.com/d1/platform/pricing/)、[Workers 限额](https://developers.cloudflare.com/workers/platform/limits/)。
+只使用浏览器标准能力与一个自建 Worker，不引入运行时依赖。技术依据：[Vue TypeScript](https://vuejs.org/guide/typescript/overview.html)、[IndexedDB](https://developer.mozilla.org/docs/Web/API/IndexedDB_API)、[Vite 静态部署](https://vite.dev/guide/static-deploy)、[Workers KV](https://developers.cloudflare.com/kv/)、[Workers 限额](https://developers.cloudflare.com/workers/platform/limits/)。
 
 ## 2. 架构与模块
 
@@ -100,7 +100,7 @@ web/
 
 - 备份导出：把全部记录连同创建时间写成带格式标识与版本号的 JSON 文件并触发下载，文件名形如 `TimeBackup_20260923_0815.json`。
 - 从文件恢复：读取所选文件，校验格式标识、版本与每条记录字段，确认后整体替换本地数据；任一条记录非法则整份拒绝导入，不做部分导入。
-- 清空记录：二次确认后清空 `entries` 并重置编号序列，保留存储标识。
+- 清空记录：二次确认后清空 `entries` 存储，保留本地存储本身与创建时间。
 - 本地数据卡片展示已完成与待补全条数、本地存储创建时间，并明示数据只保存在当前浏览器。
 - 主题为跟随系统、亮色、暗色三个等宽按钮，选择保存在 `localStorage`，页面加载前即应用，避免闪烁。
 
