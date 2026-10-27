@@ -1,0 +1,219 @@
+/*
+ * 基础层：颜色令牌、重置、页面外壳与按钮。
+ * 令牌、间距与圆角沿用 Time 网站版的规范（web/docs/DESIGN-webflow.md），
+ * 让两个页面放在一起时观感一致；表单控件在 controls.css，页面布局在 app.css。
+ */
+
+:root {
+  font-family: "WF Visual Sans Variable", Inter, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--canvas);
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+
+  --ink: #080808;
+  --canvas: #fff;
+  --panel: #fff;
+  --muted: #626262;
+  --line: #d8d8d8;
+  --surface: #f7f7f7;
+  --field-border: #a8a8a8;
+  --hover: #f1f1f1;
+  --button: #f7f7f7;
+  --button-hover: #eaeaea;
+  --danger: #a12622;
+  --accent: #2563eb;
+  --track: #e8e8e8;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ink: #eef2f5;
+  --canvas: #12161a;
+  --panel: #1c2228;
+  --muted: #b2bdc6;
+  --line: #3d4852;
+  --surface: #252d35;
+  --field-border: #64727d;
+  --hover: #303b45;
+  --button: #29323a;
+  --button-hover: #34404a;
+  --danger: #ff958b;
+  --accent: #84b3ff;
+  --track: #303b45;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* display:flex 之类的规则会盖掉 hidden 的默认样式，这里显式压回去 */
+[hidden] {
+  display: none !important;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.app-shell {
+  width: min(1040px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 36px 0 40px;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.brand-mark {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--panel);
+}
+
+.brand-mark svg {
+  width: 24px;
+  height: 24px;
+}
+
+.brand-copy {
+  min-width: 0;
+}
+
+.eyebrow {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+h1 {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+/* 主题三选一：跟随系统 / 浅色 / 深色 */
+.theme-switch {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: auto;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.theme-switch label {
+  position: relative;
+  display: block;
+}
+
+.theme-switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.theme-switch span {
+  display: grid;
+  width: 36px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--muted);
+}
+
+.theme-switch input:checked + span {
+  border-color: var(--ink);
+  color: var(--ink);
+  background: var(--panel);
+}
+
+.theme-switch input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.theme-switch svg {
+  width: 16px;
+  height: 16px;
+}
+
+.panel {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.button {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--field-border);
+  border-radius: 4px;
+  background: var(--button);
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 120ms ease;
+}
+
+.button:hover {
+  background: var(--button-hover);
+}
+
+.button-quiet {
+  min-height: 36px;
+  padding: 6px 12px;
+  border-color: var(--line);
+  color: var(--ink);
+  background: var(--panel);
+}
+
+.button-quiet:hover {
+  background: var(--hover);
+}

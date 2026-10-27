@@ -1,0 +1,136 @@
+/* 结果卡：大数字、拆解条形图、报错与口径说明；排在表单下面。 */
+
+.result-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.result-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* 标题与说明照表单区块（.section-heading）的字号层级来，正推与反推共用 */
+.result-label {
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.result-value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: clamp(36px, 5vw, 46px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-value small {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.result-value.is-negative {
+  color: var(--danger);
+}
+
+.result-caption {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.result-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.breakdown {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 32px;
+  margin: 4px 0 0;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+.breakdown-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.breakdown-name {
+  font-weight: 500;
+}
+
+.breakdown-share {
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.breakdown-amount {
+  margin-left: auto;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.breakdown-amount em {
+  margin-left: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.bar {
+  height: 6px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--track);
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 140ms ease;
+}
+
+.result-errors {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+@media (max-width: 560px) {
+  .result-panel {
+    padding: 14px;
+  }
+
+  .result-value {
+    font-size: 32px;
+  }
+
+  .breakdown {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
