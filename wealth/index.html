@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="按每月开支、收益率与通胀，加上育儿、健康、房子等大额支出，估算财富自由需要的资产；也可以先填现有资产，反推能自由分配多少。数据只在本地计算。"
+      content="按每月开支、收益率与通胀，加上育儿、健康、房子等大额支出，估算财富自由需要的资产；也可以按工资与初始资产推演这笔钱够花多久，或反过来定下花完的年份，求某项开支、月均工资该是多少。数据只在本地计算。"
     />
     <link rel="icon" type="image/svg+xml" href="./icon.svg" />
     <title>财富自由计算器</title>
@@ -78,20 +78,47 @@
         </label>
         <label>
           <input type="radio" name="mode" value="reverse" />
-          <span>按资产反推</span>
+          <span>按目标反推</span>
         </label>
       </nav>
 
       <div class="calc-stack">
         <form class="panel form-panel" id="form" autocomplete="off" novalidate>
+          <section class="form-section">
+            <div class="section-heading">
+              <h2>起点与收入</h2>
+              <p>从初始资产开始，工资逐月进来、生活费逐月扣掉，看这笔钱能撑多久。</p>
+            </div>
+            <div class="field-row">
+              <label class="field">
+                <span class="field-label">初始资产<em>万元</em></span>
+                <input type="number" data-field="initialAssets" min="0" step="1" inputmode="decimal" />
+              </label>
+              <label class="field" data-group="salary">
+                <span class="field-label">月均工资<em>万元 / 月</em></span>
+                <input type="number" data-field="salary" min="0" step="0.1" inputmode="decimal" />
+              </label>
+            </div>
+            <div class="field-row">
+              <label class="field">
+                <span class="field-label">工资年增长率<em>%</em></span>
+                <input type="number" data-field="salaryGrowth" min="0" step="0.5" inputmode="decimal" />
+              </label>
+              <label class="field" data-group="workYears">
+                <span class="field-label">工作时长<em>年</em></span>
+                <input type="number" data-field="workYears" min="0" step="1" inputmode="numeric" />
+              </label>
+            </div>
+          </section>
+
           <section class="form-section" data-when="reverse" hidden>
             <div class="section-heading">
-              <h2>现有资产</h2>
-              <p>先填手上有多少，再勾出想反推的部分。</p>
+              <h2>反推目标</h2>
+              <p>想让它刚好在第几年花完，再勾出要反推的项。</p>
             </div>
             <label class="field">
-              <span class="field-label">总资产<em>万元</em></span>
-              <input type="number" data-field="totalAssets" min="0" step="1" inputmode="decimal" />
+              <span class="field-label">希望第几年花完<em>年</em></span>
+              <input type="number" data-field="targetYears" min="1" max="100" step="1" inputmode="numeric" />
             </label>
             <fieldset>
               <legend class="field-label">想反推的部分</legend>
@@ -100,12 +127,14 @@
                 <li><label class="target"><input type="checkbox" data-target value="children" /><span>育儿</span></label></li>
                 <li><label class="target"><input type="checkbox" data-target value="health" /><span>健康</span></label></li>
                 <li><label class="target"><input type="checkbox" data-target value="major" /><span>重大投入</span></label></li>
+                <li><label class="target"><input type="checkbox" data-target value="salary" /><span>月均工资</span></label></li>
+                <li><label class="target"><input type="checkbox" data-target value="workYears" /><span>工作时长</span></label></li>
               </ul>
-              <p class="field-hint">勾选的项不再固定，剩余额度就是它们的合计；没勾的按上面填的数字锁定。</p>
+              <p class="field-hint">勾中的项各自单独反推：只改这一项、其余按当前输入，正好在第 N 年花完需要多少；没勾的按上面填的数字锁定。</p>
             </fieldset>
           </section>
 
-          <section class="form-section" data-group="living">
+          <section class="form-section">
             <div class="section-heading">
               <h2>生活开支</h2>
               <p>先定下每月花多少，再说这笔钱要多大才能一直覆盖它。</p>
@@ -117,7 +146,7 @@
                 <label><input type="radio" name="identity" value="couple" /><span>夫妻</span></label>
               </div>
             </fieldset>
-            <label class="field">
+            <label class="field" data-group="living">
               <span class="field-label">人均月消费<em>万元 / 月</em></span>
               <input type="number" data-field="monthlyPerPerson" min="0" step="0.1" inputmode="decimal" />
               <small id="spend-hint"></small>
@@ -140,7 +169,7 @@
               <p>一次性或分几年投下去的大额开销。</p>
             </div>
             <div class="field-row">
-              <label class="field" data-group="children">
+              <label class="field">
                 <span class="field-label">孩子数量<em>个</em></span>
                 <input type="number" data-field="children" min="0" step="1" inputmode="numeric" />
               </label>

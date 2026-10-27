@@ -61,7 +61,7 @@ test("收益率不高于通胀率时生活本金无解，并给出中文提示",
 });
 
 test("反推默认只放开重大投入：1000 − (480 + 100 + 150) = 270", () => {
-  const allocation = computeAllocation(base, DEFAULTS.targets);
+  const allocation = computeAllocation(base, DEFAULTS.targets, 1000);
   near(allocation.fixedTotal, 730);
   near(allocation.free, 270);
   assert.deepEqual(
@@ -70,31 +70,30 @@ test("反推默认只放开重大投入：1000 − (480 + 100 + 150) = 270", () 
   );
 });
 
-test("四项全勾时没有固定支出，可分配等于总资产", () => {
+test("四项全勾时没有固定支出，可分配等于手上那笔钱", () => {
   const all = ["living", "children", "health", "major"];
-  const allocation = computeAllocation({ ...base, totalAssets: 800 }, all);
+  const allocation = computeAllocation(base, all, 800);
   near(allocation.fixedTotal, 0);
   near(allocation.free, 800);
   assert.equal(allocation.fixed.length, 0);
 });
 
 test("反推生活开支时不再要求收益率高于通胀率", () => {
-  const input = { ...base, rate: 2, inflation: 2, totalAssets: 1000 };
-  const allocation = computeAllocation(input, ["living"]);
+  const input = { ...base, rate: 2, inflation: 2 };
+  const allocation = computeAllocation(input, ["living"], 1000);
   near(allocation.fixedTotal, 550);
   near(allocation.free, 450);
   assert.deepEqual(validate(input, ["living"]), []);
 });
 
-test("总资产不够覆盖固定项时，可分配为负数", () => {
-  const allocation = computeAllocation({ ...base, totalAssets: 100 }, DEFAULTS.targets);
+test("手上的钱不够覆盖固定项时，可分配为负数", () => {
+  const allocation = computeAllocation(base, DEFAULTS.targets, 100);
   near(allocation.free, -630);
 });
 
-test("反推缺少目标或总资产时给出提示", () => {
-  assert.deepEqual(validate(base, []), ["至少勾选一项要反推的支出。"]);
-  assert.ok(validate({ ...base, totalAssets: Number.NaN }, ["major"]).includes("现有总资产要填一个不小于 0 的数字。"));
-  assert.ok(validate({ ...base, totalAssets: -1 }, ["major"]).includes("现有总资产要填一个不小于 0 的数字。"));
+test("反推没勾目标时给出提示", () => {
+  assert.deepEqual(validate(base, []), ["至少勾选一项要反推的内容。"]);
+  assert.ok(validate({ ...base, targetYears: 0 }, ["major"]).includes("希望花完的年份要填 1 到 100 之间的数字。"));
 });
 
 test("负数项逐个报错", () => {
@@ -116,10 +115,11 @@ test("未知身份按单人处理", () => {
   assert.equal(personsOf("nobody"), 1);
 });
 
-test("金额与百分比按一位小数展示，无解显示占位符", () => {
+test("金额与百分比按一位小数展示，需要时给两位，无解显示占位符", () => {
   assert.equal(formatWan(480), "480");
   assert.equal(formatWan(479.99999999999994), "480");
   assert.equal(formatWan(1234.56), "1,234.6");
+  assert.equal(formatWan(1.2345, 2), "1.23");
   assert.equal(formatWan(Number.NaN), "—");
   assert.equal(formatPercent(4.5), "4.5%");
   assert.equal(formatPercent(25), "25%");

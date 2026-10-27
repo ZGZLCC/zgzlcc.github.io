@@ -56,6 +56,71 @@
   line-height: 1.7;
 }
 
+/* 结论块：正推与反推共用同一套标题、大字、说明的字号层级 */
+.result-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.result-block:not(:first-child) {
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+/* 工作时攒下的钱不够付专项支出时的提醒 */
+.result-warn {
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.result-warn::before {
+  content: "⚠ ";
+}
+
+/* 反推结果：一项一行，名称在左、金额在右 */
+.solve-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.solve-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.solve-name {
+  color: var(--muted);
+}
+
+.solve-value {
+  margin-left: auto;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.solve-value em {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.solve-value.is-negative {
+  color: var(--danger);
+}
+
 .breakdown {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

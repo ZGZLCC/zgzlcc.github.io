@@ -1,13 +1,6 @@
-import {
-  DEFAULTS,
-  IDENTITIES,
-  ITEMS,
-  computeAllocation,
-  computeNeed,
-  personsOf,
-  validate,
-} from "./core/calc.js";
-import { formatPercent, formatWan } from "./core/format.js";
+import { DEFAULTS, IDENTITIES, SOLVABLES, personsOf } from "./core/calc.js";
+import { formatWan } from "./core/format.js";
+import { renderResult } from "./render.js";
 import { loadState, saveState } from "./store.js";
 import { startTheme } from "./theme.js";
 
@@ -28,7 +21,7 @@ function restore(saved) {
     const value = saved[key];
     if (value === undefined || value === null) continue;
     if (Array.isArray(DEFAULTS[key])) {
-      if (Array.isArray(value)) next[key] = value.filter((id) => ITEMS.some((item) => item.id === id));
+      if (Array.isArray(value)) next[key] = value.filter((id) => SOLVABLES.some((item) => item.id === id));
     } else if (typeof DEFAULTS[key] === "number") {
       if (typeof value === "number" && Number.isFinite(value)) next[key] = value;
     } else if (typeof value === "string") {
@@ -53,7 +46,7 @@ function setRadio(root, name, value) {
 
 /**
  * 把 state 写回界面：输入框数值、单选项、反推时才出现的区块，
- * 以及「已被勾选反推」的那些项（置灰并禁用，避免误改一个不参与计算的数字）。
+ * 以及「已被勾选反推」的那些项（置灰并禁用，避免误改一个正在被解的数字）。
  */
 function syncForm() {
   for (const input of form.querySelectorAll("[data-field]")) {
@@ -79,7 +72,7 @@ function syncForm() {
 function renderHint() {
   const solvingLiving = state.mode === "reverse" && state.targets.includes("living");
   if (solvingLiving) {
-    spendHint.textContent = "生活开支交给反推，这一项不参与计算。";
+    spendHint.textContent = "生活开支交给反推，按目标年份解出人均月消费。";
     return;
   }
   const persons = personsOf(state.identity);
@@ -87,58 +80,10 @@ function renderHint() {
   spendHint.textContent = `按 ${persons} 人计，家庭月消费 ${formatWan(monthly)} 万。`;
 }
 
-function breakdownMarkup(label, value, total) {
-  const share = total > 0 && Number.isFinite(value) ? (value / total) * 100 : 0;
-  const width = Math.max(0, Math.min(100, share)).toFixed(1);
-  return `<li>
-    <div class="breakdown-line"><span class="breakdown-name">${label}</span><span class="breakdown-share">${formatPercent(share)}</span><span class="breakdown-amount">${formatWan(value)}<em>万</em></span></div>
-    <div class="bar"><i style="width: ${width}%"></i></div>
-  </li>`;
-}
-
-function needMarkup() {
-  const need = computeNeed(state);
-  const rows = ITEMS.map((item) => breakdownMarkup(item.label, need.parts[item.id], need.total)).join("");
-  return `<p class="result-label">财富自由需要的资产</p>
-    <p class="result-value">${formatWan(need.total)}<small>万元</small></p>
-    <p class="result-caption">一次备齐这些，日常生活、育儿、健康与重大投入都由这笔本金承担。</p>
-    <ul class="breakdown">${rows}</ul>`;
-}
-
-function allocationMarkup() {
-  const allocation = computeAllocation(state, state.targets);
-  const share = allocation.total > 0 ? (allocation.free / allocation.total) * 100 : 0;
-  const solving = ITEMS.filter((item) => state.targets.includes(item.id))
-    .map((item) => item.label)
-    .join("、");
-  const caption = allocation.free < 0
-    ? `固定部分比总资产多了 ${formatWan(Math.abs(allocation.free))} 万，先把这个缺口补上。`
-    : `占现有资产的 ${formatPercent(share)}，可以分给${solving}。`;
-  const fixed = allocation.fixed.length > 0
-    ? `已固定：${allocation.fixed.map((item) => `${item.label} ${formatWan(item.amount)} 万`).join(" · ")}`
-    : "四项都在待分配里，没有固定的支出。";
-  return `<p class="result-label">可自由分配</p>
-    <p class="result-value${allocation.free < 0 ? " is-negative" : ""}">${formatWan(allocation.free)}<small>万元</small></p>
-    <p class="result-caption">${caption}</p>
-    <p class="result-note">${fixed}</p>
-    <p class="result-note">总资产 ${formatWan(allocation.total)} 万，其中固定 ${formatWan(allocation.fixedTotal)} 万。</p>`;
-}
-
-function renderResult() {
-  const targets = state.mode === "reverse" ? state.targets : null;
-  const errors = validate(state, targets);
-  if (errors.length > 0) {
-    result.innerHTML = `<p class="result-label">还不能给出结果</p>
-      <ul class="result-errors">${errors.map((message) => `<li>${message}</li>`).join("")}</ul>`;
-    return;
-  }
-  result.innerHTML = state.mode === "reverse" ? allocationMarkup() : needMarkup();
-}
-
 function update() {
   saveState(state);
   renderHint();
-  renderResult();
+  result.innerHTML = renderResult(state);
 }
 
 function handleChange(event) {

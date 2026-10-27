@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "财富自由计算器：估算需要的资产，或按现有资产反推可自由分配额度。",
+  "description": "财富自由计算器：估算需要的资产、按现有资产反推可分配额度，并按工资推演这笔钱够花多久。",
   "scripts": {
     "dev": "node scripts/serve.mjs",
-    "test": "node test/calc.test.mjs"
+    "test": "node test/calc.test.mjs && node test/simulate.test.mjs"
   }
 }

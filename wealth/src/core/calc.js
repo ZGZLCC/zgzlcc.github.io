@@ -23,6 +23,13 @@ export const ITEMS = [
   { id: "major", label: "重大投入" },
 ];
 
+/** 反推里可以逐项求解的对象：四项支出，加上收入侧的两项。 */
+export const SOLVABLES = [
+  ...ITEMS,
+  { id: "salary", label: "月均工资" },
+  { id: "workYears", label: "工作时长" },
+];
+
 export const DEFAULTS = {
   mode: "need",
   identity: "couple",
@@ -33,7 +40,11 @@ export const DEFAULTS = {
   childUnitCost: 100,
   health: 150,
   major: 300,
-  totalAssets: 1000,
+  initialAssets: 0,
+  salary: 1.2,
+  salaryGrowth: 5,
+  workYears: 30,
+  targetYears: 40,
   targets: ["major"],
 };
 
@@ -68,10 +79,11 @@ export function computeNeed(input) {
 }
 
 /**
- * 反推：把不在 targets 里的项固定下来，剩下多少给 targets。
+ * 反推：pool 是手上能用的钱（由初始资产与工资推演得出），
+ * 把不在 targets 里的支出固定下来，剩下多少给 targets。
  * targets 为空表示没有可分配的部分，由 validate 拦住。
  */
-export function computeAllocation(input, targets) {
+export function computeAllocation(input, targets, pool) {
   const solving = new Set(Array.isArray(targets) ? targets : []);
   const need = computeNeed(input);
   const fixed = [];
@@ -83,7 +95,7 @@ export function computeAllocation(input, targets) {
     fixed.push({ id: item.id, label: item.label, amount: value });
     fixedTotal += value;
   }
-  const total = amount(input.totalAssets);
+  const total = amount(pool);
   return { total, fixedTotal, fixed, free: total - fixedTotal, solving: [...solving] };
 }
 
@@ -98,10 +110,15 @@ export function validate(input, targets = null) {
   const rate = Number(input.rate);
   const inflation = Number(input.inflation);
 
+  // 反推模式下被解的那一项目前没有值，不再要求它已经填好
+  const solvingSalary = reverse && targets.includes("salary");
+  const solvingYears = reverse && targets.includes("workYears");
+
   if (reverse) {
-    if (targets.length === 0) errors.push("至少勾选一项要反推的支出。");
-    if (!Number.isFinite(Number(input.totalAssets)) || Number(input.totalAssets) < 0) {
-      errors.push("现有总资产要填一个不小于 0 的数字。");
+    if (targets.length === 0) errors.push("至少勾选一项要反推的内容。");
+    const want = Number(input.targetYears);
+    if (!Number.isFinite(want) || want < 1 || want > 100) {
+      errors.push("希望花完的年份要填 1 到 100 之间的数字。");
     }
   }
 
@@ -124,6 +141,22 @@ export function validate(input, targets = null) {
   }
   if (Number.isFinite(Number(input.children)) && Number(input.children) < 0) {
     errors.push("孩子数量不能是负数。");
+  }
+
+  // 收入推演要用到这两项，反推它们的时候才不要求填好
+  for (const [key, label] of [
+    ["salary", "月均工资"],
+    ["workYears", "工作时长"],
+  ]) {
+    if ((key === "salary" && solvingSalary) || (key === "workYears" && solvingYears)) continue;
+    const value = Number(input[key]);
+    if (!Number.isFinite(value) || value < 0) errors.push(`${label}要填一个不小于 0 的数字。`);
+  }
+  if (Number.isFinite(Number(input.initialAssets)) && Number(input.initialAssets) < 0) {
+    errors.push("初始资产不能是负数。");
+  }
+  if (Number.isFinite(Number(input.salaryGrowth)) && Number(input.salaryGrowth) < 0) {
+    errors.push("工资年增长率不能是负数。");
   }
 
   return errors;

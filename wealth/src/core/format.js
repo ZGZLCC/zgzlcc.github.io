@@ -3,10 +3,10 @@
  * 只做展示，不做四舍五入后的再计算。
  */
 
-/** 万元金额：最多一位小数、带千分位，非有限数显示占位符。 */
-export function formatWan(value) {
+/** 万元金额：默认最多一位小数、带千分位，非有限数显示占位符。 */
+export function formatWan(value, digits = 1) {
   if (!Number.isFinite(value)) return "—";
-  return value.toLocaleString("zh-CN", { maximumFractionDigits: 1, minimumFractionDigits: 0 });
+  return value.toLocaleString("zh-CN", { maximumFractionDigits: digits, minimumFractionDigits: 0 });
 }
 
 /** 百分比：最多一位小数，去掉无意义的 .0。 */
