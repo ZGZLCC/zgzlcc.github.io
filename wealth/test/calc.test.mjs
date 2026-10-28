@@ -8,7 +8,11 @@ import {
   DEFAULTS,
   childMonthShare,
   childStartYears,
+  customItems,
+  customTotal,
+  healthTotal,
   houseTotal,
+  isEnabled,
   personsOf,
 } from "../src/core/calc.js";
 import { formatPercent, formatWan } from "../src/core/format.js";
@@ -16,6 +20,11 @@ import { formatPercent, formatWan } from "../src/core/format.js";
 /** 12 ÷ 0.025 在浮点下是 479.99999999999994，金额一律按容差比较。 */
 function near(actual, expected, message) {
   assert.ok(Math.abs(actual - expected) < 1e-6, `${message ?? ""} 期望 ${expected}，实际 ${actual}`);
+}
+
+/** 数组按 JSON 比，省得写一串 assert.deepEqual。 */
+function equalish(actual, expected, message) {
+  assert.deepEqual(actual, expected, message);
 }
 
 test("育儿按月摊开：22 年 264 个月加起来正好是每孩总成本", () => {
@@ -52,6 +61,31 @@ test("默认参数本身算得出正数，育儿与房子的年份都在 1 起�
   assert.ok(DEFAULTS.childStartYears.every((year) => year >= 1));
   assert.ok(houseTotal(DEFAULTS) > 0);
   assert.ok(childMonthShare(DEFAULTS.childUnitCost, 0) > 0);
+});
+
+test("被移除的块不参与计算", () => {
+  assert.equal(isEnabled(DEFAULTS, "house"), true);
+  const removed = ["house", "children", "health"];
+  assert.equal(isEnabled({ removed }, "house"), false);
+  near(houseTotal({ ...DEFAULTS, removed }), 0);
+  equalish(childStartYears({ ...DEFAULTS, removed }), []);
+  near(healthTotal({ ...DEFAULTS, removed }), 0);
+  near(healthTotal(DEFAULTS), 150);
+});
+
+test("自定义专项：数字归一，名字去掉空白，年份至少 1", () => {
+  const items = customItems({
+    custom: [
+      { id: "a", name: " 装修 ", amount: 30, year: 5, monthly: 0.2, monthlyYear: 5, years: 3 },
+      { id: "b", name: "", amount: -1, year: 0, monthly: 0, monthlyYear: 0, years: 0 },
+    ],
+  });
+  assert.equal(items[0].name, "装修");
+  assert.equal(items[0].year, 5);
+  near(customTotal(items[0]), 30 + 0.2 * 12 * 3);
+  assert.equal(items[1].amount, 0);
+  assert.equal(items[1].year, 1, "年份填 0 按第 1 年算");
+  near(customTotal(items[1]), 0);
 });
 
 test("未知身份按单人处理", () => {

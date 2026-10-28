@@ -2,7 +2,7 @@
  * 两张结果卡：工作这些年能攒下多少，以及这笔钱能撑多少年。
  * 只把算好的数字排版成 HTML 字符串，不碰输入状态与存储。
  */
-import { CHILD_YEARS, childStartYears } from "./core/calc.js";
+import { CHILD_YEARS, childStartYears, customItems, customName } from "./core/calc.js";
 import { formatPercent, formatWan } from "./core/format.js";
 import { accumulate, runwayMonths } from "./core/simulate.js";
 
@@ -11,7 +11,7 @@ function whenText(month) {
   return month < 12 ? `${Math.max(1, Math.round(month))} 个月` : `${(month / 12).toFixed(1)} 年`;
 }
 
-/** 育儿与房子的逐月扣款说明；没有工作年份时这两项一分没扣，就不写了。 */
+/** 专项支出的逐月扣款说明；没有工作年份时这些一分没扣，就不写了。 */
 function spendMarkup(state, run) {
   if (run.workYears <= 0) return "";
   const notes = [];
@@ -39,19 +39,58 @@ function spendMarkup(state, run) {
     }
     notes.push(`房子 ${formatWan(run.houseTotal)} 万：${parts.join("，")}，工作这些年扣掉 ${formatWan(run.houseSpent)} 万。`);
   }
+  // 用户自己加的专项支出：用他们填的名字来写
+  customItems(state).forEach((item, index) => {
+    const stat = run.custom[index];
+    if (!stat || stat.total <= 0) return;
+    const parts = [];
+    if (item.amount > 0) parts.push(`第 ${item.year} 年一次付 ${formatWan(item.amount)} 万`);
+    if (item.monthly > 0 && item.years > 0) {
+      parts.push(`从第 ${item.monthlyYear} 年起每月 ${formatWan(item.monthly, 2)} 万，付 ${item.years} 年`);
+    }
+    notes.push(`「${customName(item)}」共 ${formatWan(stat.total)} 万：${parts.join("，")}，工作这些年扣掉 ${formatWan(stat.spent)} 万。`);
+  });
   return notes.map((note) => `<p class="result-note">${note}</p>`).join("");
+}
+
+/** 工作结束后还要继续付的项，按项列出「房贷 26.4 万」这种说法。 */
+function pendingParts(run) {
+  const parts = [];
+  if (run.childPending > 0.05) parts.push(`育儿 ${formatWan(run.childPending)} 万`);
+  if (run.housePending > 0.05) parts.push(`房贷 ${formatWan(run.housePending)} 万`);
+  for (const item of run.custom) {
+    if (item.pending > 0.05) parts.push(`${item.name} ${formatWan(item.pending)} 万`);
+  }
+  return parts;
+}
+
+/** 每一段「被大额支出打穿」的欠款各写一条，末尾补一句规则说明。 */
+function debtNotes(run) {
+  if (!run.debts || run.debts.length === 0) return "";
+  const label = (item) => `${item.name}${item.name.endsWith("」") ? "" : " "}${formatWan(item.amount)} 万`;
+  const lines = run.debts.map((debt) => {
+    const cause = debt.causes && debt.causes.length > 0
+      ? debt.causes.map(label).join("、")
+      : "一笔大额支出";
+    const back = debt.end === null
+      ? "之后一直没回到正数"
+      : `第 ${whenText(debt.end)}才回到正数`;
+    return `<p class="result-note">第 ${whenText(debt.start)}的${cause}让余额掉到 ${formatWan(debt.startBalance)} 万，${back}。</p>`;
+  });
+  return `${lines.join("")}<p class="result-note">欠款期间不算收益，每月结余都拿去还，还清之后余额才重新开始增值。</p>`;
 }
 
 /**
  * 工作结束时的余额怎么变成大数字：只预留医疗；
- * 没付完的育儿/房贷照实提示还有多少，但不在这一步扣，交给「能撑多少年」按月继续扣。
+ * 没付完的育儿 / 房贷 / 自定义专项照实提示还有多少，但不在这一步扣，交给「能撑多少年」按月继续扣。
  */
 function reserveNote(run) {
   const parts = [`工作结束时手上 ${formatWan(run.saved)} 万`];
   if (run.health > 0) parts.push(`预留 ${formatWan(run.health)} 万用于医疗等方面`);
   const lead = run.health > 0 ? `，剩下的就是上面这笔。` : `，就是上面这笔。`;
-  const pending = run.pending > 0.05
-    ? `<p class="result-note">另外还有 ${formatWan(run.pending)} 万育儿 / 房贷要在工作结束后继续按月付，没从上面这笔里扣。</p>`
+  const later = pendingParts(run);
+  const pending = later.length > 0
+    ? `<p class="result-note">另外${later.join("、")}要在工作结束后继续付，没从上面这笔里扣。</p>`
     : "";
   return `<p class="result-note">${parts.join("，")}${lead}</p>${pending}`;
 }
@@ -95,26 +134,29 @@ export function renderSalary(state) {
   const label = run.workYears > 0 ? `工作 ${run.workYears} 年后能攒下` : "按现在的设置能攒下";
   const spend = spendMarkup(state, run);
 
-  // 余额在非首付月份转负：这套收支撑不住，推演停在那里
+  // 余额在非大额月份转负：这套收支撑不住，推演停在那里
   if (run.stopped !== null) {
-    // 还没花到房子的钱，说明是生活费 / 育儿就撑不住了，提示换个方向
-    const advice = run.houseSpent === 0
+    // 一次大额都还没花，说明是生活费 / 育儿这些固定开支撑不住，提示换个方向
+    const advice = run.houseSpent === 0 && run.custom.every((item) => item.spent === 0)
       ? "工资撑不住生活费与育儿这些固定开支：把生活费压一压，或者把工资、初始资金填高一点。"
-      : "只有付首付的那个月允许透支，其他月份余额必须为正：把首付年份推后（等手上攒够再买）、压低首付，或者把工资填高一点。";
+      : "只有一次性大额（首付、自定义专项）那个月允许透支，其他月份余额必须为正：把那些支出推后、压低，或者把工资填高一点。";
     return `<p class="result-label">${label}</p>
       <p class="result-value">0<small>万元</small></p>
       <p class="result-caption">${caption}</p>
       ${spend}
+      ${debtNotes(run)}
       <p class="result-warn">第 ${whenText(run.stopped)}余额掉到 ${formatWan(run.stopBalance)} 万，推演停在这里。${advice}</p>`;
   }
 
-  // 首付透支之后一直没补回来，等于欠到最后
-  if (run.debtStart !== null && run.debtEnd === null) {
+  // 有一段欠款到工作结束都没还清
+  const openDebt = run.debts.find((debt) => debt.end === null);
+  if (openDebt) {
     return `<p class="result-label">${label}</p>
       <p class="result-value">0<small>万元</small></p>
       <p class="result-caption">${caption}</p>
       ${spend}
-      <p class="result-warn">第 ${whenText(run.debtStart)}付首付时余额掉到 ${formatWan(run.debtStartBalance)} 万，之后一直没回到正数（最低 ${formatWan(run.lowest)} 万），到工作结束仍在欠钱；把首付压低或把首付年份往后挪。</p>`;
+      ${debtNotes(run)}
+      <p class="result-warn">到工作结束还在欠钱（最低 ${formatWan(run.lowest)} 万）；把首付或自定义专项压低、往后挪。</p>`;
   }
 
   if (run.saved <= 0) {
@@ -128,12 +170,7 @@ export function renderSalary(state) {
       <p class="result-warn">${warn}</p>`;
   }
 
-  // 首付把钱打穿之后的那段欠款：说清从哪个月开始、哪个月补回来
-  const dip = run.debtStart === null
-    ? ""
-    : run.debtEnd !== null
-      ? `<p class="result-note">第 ${whenText(run.debtStart)}付首付时余额掉到 ${formatWan(run.debtStartBalance)} 万，第 ${whenText(run.debtEnd)}才回到正数；这段相当于先借钱周转，不影响后面继续算。</p>`
-      : `<p class="result-note">第 ${whenText(run.debtStart)}付首付时余额掉到 ${formatWan(run.debtStartBalance)} 万，之后一直没回到正数。</p>`;
+  const dip = debtNotes(run);
 
   if (run.left < 0) {
     return `<p class="result-label">${label}</p>
@@ -175,9 +212,10 @@ export function renderRunway(state) {
   const inflation = Number(state.inflation);
   const monthly = run.monthlySpendAfterWork;
   const months = runwayMonths(state, amount);
-  const tail = run.pending > 0.05
-    ? `，没付完的 ${formatWan(run.pending)} 万育儿 / 房贷也继续按月扣`
-    : "，育儿与房贷已经付完";
+  const later = pendingParts(run);
+  const tail = later.length > 0
+    ? `，没付完的${later.join("、")}也继续按月扣`
+    : "，专项支出都已经付完";
   const caption = `从 ${formatWan(amount)} 万起，按工作结束时每月 ${formatWan(monthly)} 万的生活费（之后继续按 ${formatPercent(inflation)} 通胀上涨）、年收益 ${formatPercent(rate)} 算${tail}。`;
 
   if (months === Infinity) {

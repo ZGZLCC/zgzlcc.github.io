@@ -25,15 +25,26 @@
   gap: 20px;
 }
 
-.form-section {
+/* 自己加的专项支出：列表本身也是纵向排布，空的时候不占位 */
+.special-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
 }
 
-.form-section + .form-section {
-  padding-top: 20px;
-  border-top: 1px solid var(--line);
+.special-list:empty {
+  display: none;
+}
+
+.special-actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.restore-slot {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .section-heading h2 {

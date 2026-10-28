@@ -72,8 +72,8 @@
       </header>
 
       <div class="calc-stack">
-        <form class="panel form-panel" id="form" autocomplete="off" novalidate>
-          <section class="form-section">
+        <form class="calc-stack" id="form" autocomplete="off" novalidate>
+          <section class="panel form-panel" id="living-panel">
             <div class="section-heading">
               <h2>生活开支</h2>
               <p>先定下每月花多少（不含房贷与育儿），这是逐月推演里最稳定的一笔支出。</p>
@@ -102,14 +102,14 @@
             </div>
           </section>
 
-          <section class="form-section">
+          <section class="panel form-panel" id="special-panel">
             <div class="section-heading">
               <h2>专项支出</h2>
-              <p>育儿按 22 年摊到每月，房子先付首付、之后按月还贷；填上各自开始的年份，它们就会从每月的现金流里扣掉。</p>
+              <p>育儿按 22 年摊到每月，房子先付首付、之后按月还贷；也能自己加别的专项，它们都会从每月的现金流里扣。不需要的可以移除，之后再加回来。</p>
             </div>
 
-            <fieldset class="field-group" data-group="children">
-              <legend class="field-label">育儿<em>22 年 · 出生到大学毕业</em></legend>
+            <fieldset class="field-group" data-block="children">
+              <legend class="field-label">育儿<em>22 年 · 出生到大学毕业</em><button class="group-remove" type="button" data-remove="children">移除</button></legend>
               <div class="field-group-body">
                 <div class="field-row">
                   <label class="field">
@@ -126,8 +126,8 @@
               </div>
             </fieldset>
 
-            <fieldset class="field-group" data-group="major">
-              <legend class="field-label">房子<em>首付 + 月供</em></legend>
+            <fieldset class="field-group" data-block="house">
+              <legend class="field-label">房子<em>首付 + 月供</em><button class="group-remove" type="button" data-remove="house">移除</button></legend>
               <div class="field-group-body">
                 <div class="field-row">
                   <label class="field">
@@ -157,8 +157,8 @@
               </div>
             </fieldset>
 
-            <fieldset class="field-group" data-group="health">
-              <legend class="field-label">健康<em>工作结束时预留</em></legend>
+            <fieldset class="field-group" data-block="health">
+              <legend class="field-label">健康<em>工作结束时预留</em><button class="group-remove" type="button" data-remove="health">移除</button></legend>
               <div class="field-group-body">
                 <label class="field">
                   <span class="field-label">健康开销<em>万元</em></span>
@@ -167,6 +167,13 @@
                 </label>
               </div>
             </fieldset>
+
+            <div id="custom-list" class="special-list"></div>
+
+            <div class="form-actions special-actions">
+              <button class="button button-quiet" id="add-custom" type="button">＋ 新增专项支出</button>
+              <span class="restore-slot" id="restore-slot"></span>
+            </div>
           </section>
 
           <div class="form-actions">

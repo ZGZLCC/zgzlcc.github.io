@@ -241,8 +241,7 @@ test("首付那个月允许透支，下个月补回来就继续跑", () => {
   // 第 1 个月：20 − 25 = −5（首付月，允许）；第 2 个月 +20 → 15，转正
   assert.equal(run.stopped, null);
   close(run.saved, 24 * 20 - 25, "24 个月工资 480 万，减掉 25 万首付");
-  close(run.lowest, -5);
-});
+  close(run.lowest, -5);});
 
 test("首付打穿余额不算失败，记下欠款从哪个月开始、哪个月转正", () => {
   const run = accumulate(bare({
@@ -255,9 +254,10 @@ test("首付打穿余额不算失败，记下欠款从哪个月开始、哪个�
     houseYears: 0,
   }));
   assert.equal(run.stopped, null);
-  assert.equal(run.debtStart, 1);
-  close(run.debtStartBalance, -38, "第 1 个月 2 − 40");
-  assert.equal(run.debtEnd, 20, "每月补 2 万，第 20 个月回到 0");
+  assert.equal(run.debts.length, 1);
+  close(run.debts[0].start, 1);
+  close(run.debts[0].startBalance, -38, "第 1 个月 2 − 40");
+  assert.equal(run.debts[0].end, 20, "每月补 2 万，第 20 个月回到 0");
   close(run.saved, 120 * 2 - 40);
 });
 
@@ -272,8 +272,9 @@ test("首付之后一直补不回来：不中断，但欠款没有结束月", ()
     houseYears: 0,
   }));
   assert.equal(run.stopped, null);
-  assert.equal(run.debtStart, 1);
-  assert.equal(run.debtEnd, null);
+  assert.equal(run.debts.length, 1);
+  close(run.debts[0].start, 1);
+  assert.equal(run.debts[0].end, null);
   close(run.saved, 0);
 });
 
@@ -325,4 +326,109 @@ test("育儿与房贷都没付完时，钱不够 left 为负", () => {
     health: 20,
   }));
   assert.ok(run.left < 0, `left 应该为负，实际 ${run.left}`);
+});
+
+test("自定义专项：一次性那笔在指定年份扣，月付按年数扣", () => {
+  const oneOff = accumulate(bare({
+    monthlyPerPerson: 0,
+    annualSalary: 24,
+    workYears: 2,
+    custom: [{ id: "c1", name: "装修", amount: 10, year: 1, monthly: 0, monthlyYear: 0, years: 0 }],
+  }));
+  close(oneOff.saved, 48 - 10);
+  close(oneOff.custom[0].total, 10);
+  close(oneOff.custom[0].spent, 10);
+  assert.equal(oneOff.custom[0].name, "装修");
+
+  const monthly = accumulate(bare({
+    monthlyPerPerson: 0,
+    annualSalary: 24,
+    workYears: 3,
+    custom: [{ id: "c1", name: "赡养", amount: 0, year: 1, monthly: 1, monthlyYear: 1, years: 2 }],
+  }));
+  close(monthly.saved, 72 - 24, "每月 1 万付 2 年 = 24 万");
+});
+
+test("自定义专项的大额支出也能把余额打穿，之后按欠款继续跑", () => {
+  const run = accumulate(bare({
+    monthlyPerPerson: 0,
+    annualSalary: 24,
+    workYears: 2,
+    custom: [{ id: "c1", name: "装修", amount: 24, year: 1, monthly: 0, monthlyYear: 0, years: 0 }],
+  }));
+  // 第 1 个月：2 − 24 = −22（一次性那笔，允许）；之后每月 +2，第 12 个月转正
+  assert.equal(run.stopped, null);
+  assert.equal(run.debts.length, 1);
+  close(run.debts[0].startBalance, -22);
+  assert.equal(run.debts[0].end, 12);
+  close(run.saved, 48 - 24);
+});
+
+test("两段欠款：第一段还清后又被打穿，第二段照样算欠款而不是停", () => {
+  const run = accumulate(bare({
+    monthlyPerPerson: 1,
+    annualSalary: 24, // 月薪 2 万，扣掉生活费每月结余 1 万
+    workYears: 10,
+    houseDown: 20,
+    houseDownYear: 1,
+    houseYears: 0,
+    custom: [{ id: "c1", name: "车", amount: 80, year: 6, monthly: 0, monthlyYear: 0, years: 0 }],
+  }));
+  // 第 1 个月首付把余额打到 −19（月薪 2 − 生活费 1 − 首付 20），第 20 个月还清；
+  // 第 61 个月车钱 80 万再把余额打到 −39，之后每月补 1 万，第 100 个月还清
+  assert.equal(run.debts.length, 2, "两段欠款都要记下来");
+  close(run.debts[0].start, 1);
+  assert.equal(run.debts[0].end, 20, "第一段第 20 个月还清");
+  close(run.debts[1].start, 61);
+  close(run.debts[1].startBalance, -39);
+  assert.equal(run.debts[1].end, 100, "第二段第 100 个月还清，中间不该停");
+  assert.equal(run.stopped, null);
+  close(run.saved, 240 - 120 - 20 - 80, "工资 240 − 生活费 120 − 首付 20 − 车 80");
+});
+
+test("欠款期间不按收益率生息，靠每月结余往下还", () => {
+  // 年收益 12% 也不该让欠款变大：第 1 个月 −22，之后每月 +2，第 12 个月正好还清
+  const run = accumulate(bare({
+    monthlyPerPerson: 0,
+    annualSalary: 24,
+    workYears: 5,
+    rate: 12,
+    custom: [{ id: "c1", name: "装修", amount: 24, year: 1, monthly: 0, monthlyYear: 0, years: 0 }],
+  }));
+  close(run.debts[0].startBalance, -22);
+  assert.equal(run.debts[0].end, 12, "第 12 个月还清，没有被利息拖长");
+  // 还清之后余额再开始吃收益：剩 48 个月，每月 +2，按月复利
+  const monthlyRate = Math.pow(1.12, 1 / 12) - 1;
+  close(run.saved, 2 * ((Math.pow(1 + monthlyRate, 48) - 1) / monthlyRate));
+});
+
+test("被移除的块不算钱：房子 / 育儿 / 健康都能删掉", () => {
+  const run = accumulate(bare({
+    workYears: 5,
+    monthlyPerPerson: 0,
+    annualSalary: 24,
+    children: 1,
+    childUnitCost: 100,
+    houseDown: 90,
+    houseMonthly: 1,
+    houseMonthlyYear: 1,
+    houseYears: 10,
+    health: 20,
+    removed: ["children", "house", "health"],
+  }));
+  close(run.saved, 120);
+  close(run.pending, 0);
+  close(run.left, 120, "医疗也移除了，所以不留医疗");
+  close(run.health, 0);
+});
+
+test("runwayMonths：自定义专项的月付也会一直扣下去", () => {
+  const input = bare({
+    workYears: 30,
+    monthlyPerPerson: 0,
+    rate: 0,
+    inflation: 0,
+    custom: [{ id: "c1", name: "赡养", amount: 0, year: 1, monthly: 1, monthlyYear: 30, years: 20 }],
+  });
+  close(runwayMonths(input, 100), 100, "工作结束后每月还要付 1 万，100 万撑 100 个月");
 });

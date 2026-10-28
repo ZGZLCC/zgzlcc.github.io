@@ -50,6 +50,9 @@ export const DEFAULTS = {
   houseYears: 25,
   // 健康：工作结束时预留一笔，用于医疗等方面
   health: 150,
+  // 专项支出里被移除的块（育儿 / 房子 / 健康），以及用户自己加的那些
+  removed: [],
+  custom: [],
   // 工资：按年填，增长分两段，两段年数相加就是工作时长
   initialAssets: 0,
   annualSalary: 24,
@@ -59,12 +62,53 @@ export const DEFAULTS = {
   salaryGrowthLate: 3,
 };
 
+/** 能移除也能加回来的三块；顺序就是「加回来」按钮的顺序。 */
+export const FIXED_BLOCKS = [
+  { id: "children", label: "育儿" },
+  { id: "house", label: "房子" },
+  { id: "health", label: "健康" },
+];
+
+/** 加回某一块时恢复成默认值，和首次打开页面时一样。 */
+export const BLOCK_DEFAULTS = {
+  children: {
+    children: DEFAULTS.children,
+    childUnitCost: DEFAULTS.childUnitCost,
+    childStartYears: [...DEFAULTS.childStartYears],
+  },
+  house: {
+    houseDown: DEFAULTS.houseDown,
+    houseDownYear: DEFAULTS.houseDownYear,
+    houseMonthly: DEFAULTS.houseMonthly,
+    houseMonthlyYear: DEFAULTS.houseMonthlyYear,
+    houseYears: DEFAULTS.houseYears,
+  },
+  health: { health: DEFAULTS.health },
+};
+
+/** 新加的专项支出：所有数字都从 0 起，等用户自己填。 */
+export const DEFAULT_CUSTOM = {
+  id: "",
+  name: "",
+  amount: 0,
+  year: 0,
+  monthly: 0,
+  monthlyYear: 0,
+  years: 0,
+};
+
 /** 新加一个孩子时默认从工作第 2 年开始。 */
 export const DEFAULT_CHILD_YEAR = DEFAULTS.childStartYears[0];
 
 /** 身份对应的人数；未知身份按单人处理。 */
 export function personsOf(identity) {
   return IDENTITIES.find((item) => item.id === identity)?.persons ?? 1;
+}
+
+/** 某一块专项支出还在不在（被移除的块不参与计算）。 */
+export function isEnabled(input, id) {
+  const removed = Array.isArray(input.removed) ? input.removed : [];
+  return !removed.includes(id);
 }
 
 /** 把金额或数量归一：非有限数、负数都按 0 处理。 */
@@ -94,9 +138,10 @@ export function childMonthShare(unitCost, month) {
 
 /**
  * 每个孩子各自的开始年份（工作第几年，从 1 数起）：按孩子数量截断或补齐，
- * 没填、填 0 的都按默认的第 2 年算。
+ * 没填、填 0 的都按默认的第 2 年算；育儿整块被移除时没有孩子。
  */
 export function childStartYears(input) {
+  if (!isEnabled(input, "children")) return [];
   const count = Math.round(amount(input.children));
   const saved = Array.isArray(input.childStartYears) ? input.childStartYears : [];
   const years = [];
@@ -107,7 +152,40 @@ export function childStartYears(input) {
   return years;
 }
 
-/** 房子一共要花多少：首付 + 月供 × 12 × 年数；全款时月供为 0，就只剩首付。 */
+/** 房子一共要花多少：首付 + 月供 × 12 × 年数；全款时月供为 0，就只剩首付。整块移除时为 0。 */
 export function houseTotal(input) {
+  if (!isEnabled(input, "house")) return 0;
   return amount(input.houseDown) + amount(input.houseMonthly) * 12 * Math.round(amount(input.houseYears));
+}
+
+/** 工作结束时预留多少医疗；健康整块被移除时为 0。 */
+export function healthTotal(input) {
+  return isEnabled(input, "health") ? amount(input.health) : 0;
+}
+
+/**
+ * 用户自己加的专项支出，全部归一成数字：一次性金额在 year 那一年付，
+ * 之后每月 monthly 万付 years 年（从 monthlyYear 那年开始）。年份都从 1 数起。
+ */
+export function customItems(input) {
+  const list = Array.isArray(input.custom) ? input.custom : [];
+  return list.map((item, index) => ({
+    id: typeof item?.id === "string" && item.id ? item.id : `custom-${index}`,
+    name: typeof item?.name === "string" ? item.name.trim() : "",
+    amount: amount(item?.amount),
+    year: Math.max(1, Math.round(amount(item?.year) || 1)),
+    monthly: amount(item?.monthly),
+    monthlyYear: Math.max(1, Math.round(amount(item?.monthlyYear) || 1)),
+    years: Math.round(amount(item?.years)),
+  }));
+}
+
+/** 某一项自定义专项一共要花多少：一次性 + 月付 × 12 × 年数。 */
+export function customTotal(item) {
+  return amount(item.amount) + amount(item.monthly) * 12 * Math.round(amount(item.years));
+}
+
+/** 自定义专项的名称，没填就叫「自定义专项」。 */
+export function customName(item) {
+  return (item?.name || "").trim() || "自定义专项";
 }
