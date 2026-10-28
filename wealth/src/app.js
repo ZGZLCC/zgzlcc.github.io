@@ -1,14 +1,15 @@
-import { DEFAULTS, IDENTITIES, SOLVABLES, personsOf } from "./core/calc.js";
+import { DEFAULT_CHILD_YEAR, DEFAULTS, IDENTITIES, personsOf } from "./core/calc.js";
 import { formatWan } from "./core/format.js";
-import { renderResult } from "./render.js";
+import { renderRunway, renderSalary } from "./render.js";
 import { loadState, saveState } from "./store.js";
 import { startTheme } from "./theme.js";
 
 const form = document.getElementById("form");
-const result = document.getElementById("result");
 const spendHint = document.getElementById("spend-hint");
-// 计算方式的切换放在表单外面，单独拿一个引用，事件和勾选都要走它
-const modeNav = document.querySelector(".mode-switch");
+const childYears = document.getElementById("child-years");
+const salaryPanel = document.getElementById("salary-panel");
+const salaryResult = document.getElementById("salary-result");
+const runwayResult = document.getElementById("runway-result");
 
 startTheme();
 
@@ -16,12 +17,14 @@ const state = restore(loadState());
 
 /** 把本地存下的参数并进默认值：只认已知字段，类型不对就保留默认。 */
 function restore(saved) {
-  const next = { ...DEFAULTS, targets: [...DEFAULTS.targets] };
+  const next = { ...DEFAULTS, childStartYears: [...DEFAULTS.childStartYears] };
   for (const key of Object.keys(DEFAULTS)) {
     const value = saved[key];
     if (value === undefined || value === null) continue;
-    if (Array.isArray(DEFAULTS[key])) {
-      if (Array.isArray(value)) next[key] = value.filter((id) => SOLVABLES.some((item) => item.id === id));
+    if (key === "childStartYears") {
+      if (Array.isArray(value)) {
+        next[key] = value.filter((year) => typeof year === "number" && Number.isFinite(year));
+      }
     } else if (typeof DEFAULTS[key] === "number") {
       if (typeof value === "number" && Number.isFinite(value)) next[key] = value;
     } else if (typeof value === "string") {
@@ -29,11 +32,10 @@ function restore(saved) {
     }
   }
   if (!IDENTITIES.some((item) => item.id === next.identity)) next.identity = DEFAULTS.identity;
-  if (next.mode !== "need" && next.mode !== "reverse") next.mode = DEFAULTS.mode;
   return next;
 }
 
-/** 空输入按「没填」算，交给 validate 解释；填了数字就按数字算。 */
+/** 空输入按「没填」算，交给计算层按 0 / 默认值处理；填了数字就按数字算。 */
 function readNumber(input) {
   const raw = input.value.trim();
   return raw === "" ? Number.NaN : Number(raw);
@@ -44,64 +46,77 @@ function setRadio(root, name, value) {
   if (radio) radio.checked = true;
 }
 
-/**
- * 把 state 写回界面：输入框数值、单选项、反推时才出现的区块，
- * 以及「已被勾选反推」的那些项（置灰并禁用，避免误改一个正在被解的数字）。
- */
+/** 孩子数量变了就增减开始年份，让数组长度跟孩子数一致；输入框空着的时候不动。 */
+function resizeChildYears() {
+  const raw = Number(state.children);
+  if (!Number.isFinite(raw) || raw < 0) return;
+  const count = Math.round(raw);
+  const years = state.childStartYears.slice(0, count);
+  while (years.length < count) years.push(DEFAULT_CHILD_YEAR);
+  state.childStartYears = years;
+}
+
+/** 每个孩子一行「开始年份」，块跟着孩子数量动态生成。 */
+function syncChildYears() {
+  childYears.innerHTML = state.childStartYears
+    .map((year, index) => `<label class="field">
+      <span class="field-label">第 ${index + 1} 个孩子开始年份<em>工作第几年</em></span>
+      <input type="number" data-child-year="${index}" min="1" step="1" inputmode="numeric" value="${Number.isFinite(year) ? year : ""}" />
+    </label>`)
+    .join("");
+}
+
+/** 把 state 写回表单：数值与单选项。 */
 function syncForm() {
   for (const input of form.querySelectorAll("[data-field]")) {
     const value = state[input.dataset.field];
     input.value = Number.isFinite(value) ? String(value) : "";
   }
-  setRadio(modeNav, "mode", state.mode);
   setRadio(form, "identity", state.identity);
-  for (const box of form.querySelectorAll("input[data-target]")) {
-    box.checked = state.targets.includes(box.value);
-  }
-  for (const section of form.querySelectorAll("[data-when]")) {
-    section.hidden = section.dataset.when !== state.mode;
-  }
-  const solving = state.mode === "reverse" ? new Set(state.targets) : new Set();
-  for (const group of form.querySelectorAll("[data-group]")) {
-    const active = solving.has(group.dataset.group);
-    group.classList.toggle("is-solving", active);
-    for (const control of group.querySelectorAll("input, button")) control.disabled = active;
+  resizeChildYears();
+  syncChildYears();
+}
+
+/** 「工资计算」板块的六个输入框，跟主表单共用同一份 state。 */
+function syncSalary() {
+  for (const input of salaryPanel.querySelectorAll("[data-salary]")) {
+    const value = state[input.dataset.salary];
+    input.value = Number.isFinite(value) ? String(value) : "";
   }
 }
 
 function renderHint() {
-  const solvingLiving = state.mode === "reverse" && state.targets.includes("living");
-  if (solvingLiving) {
-    spendHint.textContent = "生活开支交给反推，按目标年份解出人均月消费。";
-    return;
-  }
   const persons = personsOf(state.identity);
   const monthly = (Number.isFinite(state.monthlyPerPerson) ? state.monthlyPerPerson : 0) * persons;
-  spendHint.textContent = `按 ${persons} 人计，家庭月消费 ${formatWan(monthly)} 万。`;
+  spendHint.textContent = `按 ${persons} 人计，家庭月消费 ${formatWan(monthly)} 万；不含房贷与育儿，这两项单独扣。`;
 }
 
 function update() {
   saveState(state);
   renderHint();
-  result.innerHTML = renderResult(state);
+  salaryResult.innerHTML = renderSalary(state);
+  runwayResult.innerHTML = renderRunway(state);
 }
 
 function handleChange(event) {
   const target = event.target;
   if (!(target instanceof HTMLInputElement)) return;
-  if (target.dataset.field) {
-    state[target.dataset.field] = readNumber(target);
-    if (target.dataset.field === "children" && Number.isFinite(state.children)) {
-      state.children = Math.max(0, Math.round(state.children));
+  // 每个孩子那一行的开始年份，按下标写回数组
+  if (target.dataset.childYear !== undefined) {
+    state.childStartYears[Number(target.dataset.childYear)] = readNumber(target);
+    update();
+    return;
+  }
+  const field = target.dataset.field ?? target.dataset.salary;
+  if (field) {
+    state[field] = readNumber(target);
+    if (field === "children") {
+      if (Number.isFinite(state.children)) state.children = Math.max(0, Math.round(state.children));
+      resizeChildYears();
+      syncChildYears();
     }
-  } else if (target.name === "mode") {
-    state.mode = target.value;
-    syncForm();
   } else if (target.name === "identity") {
     state.identity = target.value;
-  } else if (target.hasAttribute("data-target")) {
-    state.targets = [...form.querySelectorAll("input[data-target]:checked")].map((box) => box.value);
-    syncForm();
   } else {
     return;
   }
@@ -110,14 +125,16 @@ function handleChange(event) {
 
 form.addEventListener("input", handleChange);
 form.addEventListener("change", handleChange);
-modeNav.addEventListener("change", handleChange);
+salaryPanel.addEventListener("input", handleChange);
+salaryPanel.addEventListener("change", handleChange);
 
 document.getElementById("reset").addEventListener("click", () => {
-  const { mode } = state;
-  Object.assign(state, DEFAULTS, { targets: [...DEFAULTS.targets], mode });
+  Object.assign(state, DEFAULTS, { childStartYears: [...DEFAULTS.childStartYears] });
   syncForm();
+  syncSalary();
   update();
 });
 
 syncForm();
+syncSalary();
 update();

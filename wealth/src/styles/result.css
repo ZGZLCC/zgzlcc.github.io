@@ -1,11 +1,4 @@
-/* 结果卡：大数字、拆解条形图、报错与口径说明；排在表单下面。 */
-
-.result-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
+/* 结果卡：大数字、口径说明与提醒；排在工资计算的输入下面。 */
 
 .result-body {
   display: flex;
@@ -14,7 +7,7 @@
   min-width: 0;
 }
 
-/* 标题与说明照表单区块（.section-heading）的字号层级来，正推与反推共用 */
+/* 标题与说明照表单区块（.section-heading）的字号层级来 */
 .result-label {
   color: var(--ink);
   font-size: 16px;
@@ -40,10 +33,6 @@
   letter-spacing: 0;
 }
 
-.result-value.is-negative {
-  color: var(--danger);
-}
-
 .result-caption {
   color: var(--muted);
   font-size: 12px;
@@ -56,21 +45,7 @@
   line-height: 1.7;
 }
 
-/* 结论块：正推与反推共用同一套标题、大字、说明的字号层级 */
-.result-block {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-}
-
-.result-block:not(:first-child) {
-  margin-top: 4px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-}
-
-/* 工作时攒下的钱不够付专项支出时的提醒 */
+/* 「攒不够 / 中途见底」的提醒 */
 .result-warn {
   color: var(--danger);
   font-size: 13px;
@@ -81,121 +56,13 @@
   content: "⚠ ";
 }
 
-/* 反推结果：一项一行，名称在左、金额在右 */
-.solve-list {
-  display: grid;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.solve-list li {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  font-size: 13px;
-}
-
-.solve-name {
-  color: var(--muted);
-}
-
-.solve-value {
-  margin-left: auto;
-  font-size: 16px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-.solve-value em {
-  margin-left: 4px;
-  color: var(--muted);
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 500;
-}
-
-.solve-value.is-negative {
-  color: var(--danger);
-}
-
-.breakdown {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px 32px;
-  margin: 4px 0 0;
-  padding: 16px 0 0;
-  border-top: 1px solid var(--line);
-  list-style: none;
-}
-
-.breakdown-line {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  font-size: 13px;
-}
-
-.breakdown-name {
-  font-weight: 500;
-}
-
-.breakdown-share {
-  color: var(--muted);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-}
-
-.breakdown-amount {
-  margin-left: auto;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-
-.breakdown-amount em {
-  margin-left: 2px;
-  color: var(--muted);
-  font-size: 11px;
-  font-style: normal;
-}
-
-.bar {
-  height: 6px;
-  margin-top: 6px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--track);
-}
-
-.bar i {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--accent);
-  transition: width 140ms ease;
-}
-
-.result-errors {
-  margin: 0;
-  padding-left: 18px;
-  color: var(--danger);
-  font-size: 13px;
-  line-height: 1.7;
-}
-
 @media (max-width: 560px) {
-  .result-panel {
+  .salary-panel,
+  .runway-panel {
     padding: 14px;
   }
 
   .result-value {
     font-size: 32px;
-  }
-
-  .breakdown {
-    grid-template-columns: 1fr;
-    gap: 14px;
   }
 }

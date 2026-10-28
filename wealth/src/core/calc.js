@@ -1,12 +1,10 @@
 /**
- * 财富自由计算器的纯计算逻辑：不接触 DOM、localStorage 与网络，可直接用 Node 测试。
+ * 财富计算器的纯计算逻辑：不接触 DOM、localStorage 与网络，可直接用 Node 测试。
  *
  * 约定：金额单位统一为「万元」，比率的单位是百分比数值（4.5 表示 4.5%）。
  *
- * 正推：家庭月消费 × 12 ÷（年收益率 − 通货膨胀率）得到覆盖日常生活的本金，
- *       再加上育儿、健康与重大投入，就是需要的资产总额。
- * 反推：给定总资产，把没被勾选的项按当前参数固定下来，
- *       剩下的部分就是被勾选那几项可以自由分配的合计。
+ * 这里只准备「工资计算」要用的参数：育儿按 22 年摊、房子分首付与月供、健康留到最后预留。
+ * 逐月推演在 simulate.js，页面拼装在 render.js。
  */
 
 /** 身份：单人按 1 人计，夫妻按 2 人计。 */
@@ -15,38 +13,54 @@ export const IDENTITIES = [
   { id: "couple", label: "夫妻", persons: 2 },
 ];
 
-/** 四项支出的固定顺序，正推与反推共用。 */
-export const ITEMS = [
-  { id: "living", label: "日常生活" },
-  { id: "children", label: "育儿" },
-  { id: "health", label: "健康" },
-  { id: "major", label: "重大投入" },
+/**
+ * 育儿 22 年按年龄分段摊开：婴幼儿期花得少，上学后逐段变重，大学最贵。
+ * years 是这一段年数，weight 是这一段每年的相对花销；摊的时候归一化，总额仍是「每孩总成本」。
+ */
+export const CHILD_STAGES = [
+  { years: 3, weight: 0.6 },
+  { years: 3, weight: 1 },
+  { years: 6, weight: 0.9 },
+  { years: 3, weight: 1.1 },
+  { years: 3, weight: 1.3 },
+  { years: 4, weight: 1.6 },
 ];
 
-/** 反推里可以逐项求解的对象：四项支出，加上收入侧的两项。 */
-export const SOLVABLES = [
-  ...ITEMS,
-  { id: "salary", label: "月均工资" },
-  { id: "workYears", label: "工作时长" },
-];
+/** 育儿一共摊 22 年：从出生算到大学毕业。 */
+export const CHILD_YEARS = CHILD_STAGES.reduce((sum, item) => sum + item.years, 0);
+
+/** 22 年的权重之和；摊每月时用它归一化，权重只决定比例，不放大总额。 */
+export const CHILD_WEIGHT_TOTAL = CHILD_STAGES.reduce((sum, item) => sum + item.years * item.weight, 0);
 
 export const DEFAULTS = {
-  mode: "need",
   identity: "couple",
+  // 人均月消费不含房贷与育儿，这两项单独填
   monthlyPerPerson: 0.5,
   rate: 4.5,
   inflation: 2,
+  // 育儿：每个孩子的总成本按 22 年摊到每月，各自从自己的开始年份起算
   children: 1,
   childUnitCost: 100,
+  childStartYears: [2],
+  // 房子：首付一次付，之后按月供还 houseYears 年；全款时月供填 0（默认工作 8 年后买房，那时手上有 120 多万）
+  houseDown: 90,
+  houseDownYear: 8,
+  houseMonthly: 1.1,
+  houseMonthlyYear: 8,
+  houseYears: 25,
+  // 健康：工作结束时预留一笔，用于医疗等方面
   health: 150,
-  major: 300,
+  // 工资：按年填，增长分两段，两段年数相加就是工作时长
   initialAssets: 0,
-  salary: 1.2,
-  salaryGrowth: 5,
-  workYears: 30,
-  targetYears: 40,
-  targets: ["major"],
+  annualSalary: 24,
+  salaryGrowthYears: 10,
+  salaryGrowthEarly: 8,
+  salaryGrowthLateYears: 20,
+  salaryGrowthLate: 3,
 };
+
+/** 新加一个孩子时默认从工作第 2 年开始。 */
+export const DEFAULT_CHILD_YEAR = DEFAULTS.childStartYears[0];
 
 /** 身份对应的人数；未知身份按单人处理。 */
 export function personsOf(identity) {
@@ -59,105 +73,41 @@ function amount(value) {
   return Number.isFinite(number) && number > 0 ? number : 0;
 }
 
-/**
- * 正推：按当前参数算出四项金额与总额。
- * 收益率不高于通胀率时，生活本金没有任何有限解，此时 living 为 Infinity，由 validate 拦住。
- */
-export function computeNeed(input) {
-  const persons = personsOf(input.identity);
-  const monthly = amount(input.monthlyPerPerson) * persons;
-  const spread = (Number(input.rate) - Number(input.inflation)) / 100;
-  const living = spread > 0 ? (monthly * 12) / spread : Infinity;
-  const parts = {
-    living,
-    children: Math.round(amount(input.children)) * amount(input.childUnitCost),
-    health: amount(input.health),
-    major: amount(input.major),
-  };
-  const total = parts.living + parts.children + parts.health + parts.major;
-  return { persons, monthly, spread, parts, total };
+/** 育儿第 year 年（0 基）的相对权重；超出 22 年按 0 计。 */
+function childYearWeight(year) {
+  let left = year;
+  for (const item of CHILD_STAGES) {
+    if (left < item.years) return item.weight;
+    left -= item.years;
+  }
+  return 0;
 }
 
 /**
- * 反推：pool 是手上能用的钱（由初始资产与工资推演得出），
- * 把不在 targets 里的支出固定下来，剩下多少给 targets。
- * targets 为空表示没有可分配的部分，由 validate 拦住。
+ * 一个孩子第 month 个月（0 基，共 22 × 12 个月）该摊多少万；超出 22 年返回 0。
+ * 一年 = 每孩总成本 × 当年权重 ÷ 权重之和，再除以 12 落到每月。
  */
-export function computeAllocation(input, targets, pool) {
-  const solving = new Set(Array.isArray(targets) ? targets : []);
-  const need = computeNeed(input);
-  const fixed = [];
-  let fixedTotal = 0;
-  for (const item of ITEMS) {
-    if (solving.has(item.id)) continue;
-    const value = need.parts[item.id];
-    if (!Number.isFinite(value)) continue;
-    fixed.push({ id: item.id, label: item.label, amount: value });
-    fixedTotal += value;
-  }
-  const total = amount(pool);
-  return { total, fixedTotal, fixed, free: total - fixedTotal, solving: [...solving] };
+export function childMonthShare(unitCost, month) {
+  if (!(month >= 0 && month < CHILD_YEARS * 12)) return 0;
+  return (amount(unitCost) * childYearWeight(Math.floor(month / 12))) / (CHILD_WEIGHT_TOTAL * 12);
 }
 
 /**
- * 校验参数，返回可以直接展示给用户的中文提示；空数组表示可以计算。
- * 传了 targets 就走反推口径：被反推的项不参与计算，因此不再要求它有有效参数。
+ * 每个孩子各自的开始年份（工作第几年，从 1 数起）：按孩子数量截断或补齐，
+ * 没填、填 0 的都按默认的第 2 年算。
  */
-export function validate(input, targets = null) {
-  const errors = [];
-  const reverse = Array.isArray(targets);
-  const solvingLiving = reverse && targets.includes("living");
-  const rate = Number(input.rate);
-  const inflation = Number(input.inflation);
+export function childStartYears(input) {
+  const count = Math.round(amount(input.children));
+  const saved = Array.isArray(input.childStartYears) ? input.childStartYears : [];
+  const years = [];
+  for (let index = 0; index < count; index += 1) {
+    const year = Math.round(amount(saved[index]));
+    years.push(year > 0 ? year : DEFAULT_CHILD_YEAR);
+  }
+  return years;
+}
 
-  // 反推模式下被解的那一项目前没有值，不再要求它已经填好
-  const solvingSalary = reverse && targets.includes("salary");
-  const solvingYears = reverse && targets.includes("workYears");
-
-  if (reverse) {
-    if (targets.length === 0) errors.push("至少勾选一项要反推的内容。");
-    const want = Number(input.targetYears);
-    if (!Number.isFinite(want) || want < 1 || want > 100) {
-      errors.push("希望花完的年份要填 1 到 100 之间的数字。");
-    }
-  }
-
-  if (!solvingLiving) {
-    if (!Number.isFinite(rate) || !Number.isFinite(inflation)) {
-      errors.push("年收益率与通货膨胀率都要填数字。");
-    } else if (rate <= inflation) {
-      errors.push("年收益率需要高于通货膨胀率，否则本金涨不过物价。");
-    }
-  }
-
-  for (const [key, label] of [
-    ["monthlyPerPerson", "人均月消费"],
-    ["childUnitCost", "育儿总成本"],
-    ["health", "健康开销"],
-    ["major", "重大投入"],
-  ]) {
-    const value = Number(input[key]);
-    if (Number.isFinite(value) && value < 0) errors.push(`${label}不能是负数。`);
-  }
-  if (Number.isFinite(Number(input.children)) && Number(input.children) < 0) {
-    errors.push("孩子数量不能是负数。");
-  }
-
-  // 收入推演要用到这两项，反推它们的时候才不要求填好
-  for (const [key, label] of [
-    ["salary", "月均工资"],
-    ["workYears", "工作时长"],
-  ]) {
-    if ((key === "salary" && solvingSalary) || (key === "workYears" && solvingYears)) continue;
-    const value = Number(input[key]);
-    if (!Number.isFinite(value) || value < 0) errors.push(`${label}要填一个不小于 0 的数字。`);
-  }
-  if (Number.isFinite(Number(input.initialAssets)) && Number(input.initialAssets) < 0) {
-    errors.push("初始资产不能是负数。");
-  }
-  if (Number.isFinite(Number(input.salaryGrowth)) && Number(input.salaryGrowth) < 0) {
-    errors.push("工资年增长率不能是负数。");
-  }
-
-  return errors;
+/** 房子一共要花多少：首付 + 月供 × 12 × 年数；全款时月供为 0，就只剩首付。 */
+export function houseTotal(input) {
+  return amount(input.houseDown) + amount(input.houseMonthly) * 12 * Math.round(amount(input.houseYears));
 }

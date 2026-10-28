@@ -35,10 +35,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.field input:disabled {
-  cursor: not-allowed;
-}
-
 .field input[type="number"] {
   appearance: textfield;
   -moz-appearance: textfield;
@@ -130,7 +126,24 @@ fieldset > legend {
   outline-offset: 2px;
 }
 
-/* 交给反推的那几项置灰，提示它们不参与这次计算 */
-.is-solving {
-  opacity: 0.5;
+/* 专项支出按育儿 / 房子 / 健康分组：每组一个 legend 小标题，组内每行留白 */
+.field-group-body {
+  display: grid;
+  gap: 12px;
+}
+
+.field-group + .field-group {
+  padding-top: 4px;
+}
+
+/* 组内没有 .field 包裹的说明文字（比如「每个孩子自己填开始年份」） */
+.field-note {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+/* 孩子数量为 0 时「每个孩子开始年份」那一行是空的，别留下多余的间隔 */
+.field-row:empty {
+  display: none;
 }

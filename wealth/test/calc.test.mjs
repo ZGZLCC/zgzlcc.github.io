@@ -4,11 +4,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  CHILD_YEARS,
   DEFAULTS,
-  computeAllocation,
-  computeNeed,
+  childMonthShare,
+  childStartYears,
+  houseTotal,
   personsOf,
-  validate,
 } from "../src/core/calc.js";
 import { formatPercent, formatWan } from "../src/core/format.js";
 
@@ -17,96 +18,40 @@ function near(actual, expected, message) {
   assert.ok(Math.abs(actual - expected) < 1e-6, `${message ?? ""} 期望 ${expected}，实际 ${actual}`);
 }
 
-const base = { ...DEFAULTS };
-
-test("默认参数是夫妻，需要 1,030 万", () => {
-  const need = computeNeed(base);
-  near(need.parts.living, 480, "生活本金");
-  near(need.parts.children, 100);
-  near(need.parts.health, 150);
-  near(need.parts.major, 300);
-  near(need.total, 1030);
-  assert.equal(need.persons, 2);
-  near(need.monthly, 1);
+test("育儿按月摊开：22 年 264 个月加起来正好是每孩总成本", () => {
+  let sum = 0;
+  for (let month = 0; month < CHILD_YEARS * 12; month += 1) {
+    sum += childMonthShare(100, month);
+  }
+  near(sum, 100, "22 年合计");
+  assert.equal(childMonthShare(100, CHILD_YEARS * 12), 0, "超出 22 年不再摊");
+  assert.equal(childMonthShare(100, -1), 0);
+  // 婴幼儿期每月少于大学期间每月
+  assert.ok(childMonthShare(100, 0) < childMonthShare(100, 21 * 12));
+  assert.equal(childMonthShare(0, 0), 0);
 });
 
-test("单人只算一个人的生活本金", () => {
-  const need = computeNeed({ ...base, identity: "single" });
-  assert.equal(need.persons, 1);
-  near(need.monthly, 0.5);
-  near(need.parts.living, 240);
-  near(need.total, 790);
+test("每个孩子各有开始年份：按孩子数量截断或补齐", () => {
+  assert.deepEqual(childStartYears({ children: 1, childStartYears: [5] }), [5]);
+  assert.deepEqual(childStartYears({ children: 3, childStartYears: [1, 5] }), [1, 5, 2], "缺的补默认第 2 年");
+  assert.deepEqual(childStartYears({ children: 1, childStartYears: [1, 5, 9] }), [1], "多的按数量截掉");
+  assert.deepEqual(childStartYears({ children: 0, childStartYears: [3] }), []);
+  assert.deepEqual(childStartYears({ children: 2, childStartYears: [0, -1] }), [2, 2], "0 与负数都算没填");
 });
 
-test("孩子数量取整后再乘单位成本", () => {
-  near(computeNeed({ ...base, children: 2 }).parts.children, 200);
-  near(computeNeed({ ...base, children: 2.6 }).parts.children, 300);
-  near(computeNeed({ ...base, children: -1 }).parts.children, 0);
-  near(computeNeed({ ...base, children: 1, childUnitCost: 80 }).parts.children, 80);
+test("房子 = 首付 + 月供 × 12 × 年数，全款时只剩首付", () => {
+  near(houseTotal({ houseDown: 120, houseMonthly: 1, houseYears: 20 }), 120 + 240);
+  near(houseTotal({ houseDown: 300, houseMonthly: 0, houseYears: 25 }), 300);
+  near(houseTotal({ houseDown: 300, houseMonthly: 1, houseYears: 0 }), 300);
+  near(houseTotal({}), 0);
+  near(houseTotal({ houseDown: -5, houseMonthly: -1, houseYears: -2 }), 0, "负数按 0");
 });
 
-test("空输入按 0 处理，不会得到 NaN 总额", () => {
-  const need = computeNeed({ ...base, monthlyPerPerson: Number.NaN, health: Number.NaN });
-  near(need.parts.living, 0);
-  near(need.parts.health, 0);
-  near(need.total, 400);
-});
-
-test("收益率不高于通胀率时生活本金无解，并给出中文提示", () => {
-  const need = computeNeed({ ...base, rate: 2, inflation: 2 });
-  assert.equal(need.parts.living, Infinity);
-  assert.deepEqual(validate({ ...base, rate: 2, inflation: 2 }), [
-    "年收益率需要高于通货膨胀率，否则本金涨不过物价。",
-  ]);
-});
-
-test("反推默认只放开重大投入：1000 − (480 + 100 + 150) = 270", () => {
-  const allocation = computeAllocation(base, DEFAULTS.targets, 1000);
-  near(allocation.fixedTotal, 730);
-  near(allocation.free, 270);
-  assert.deepEqual(
-    allocation.fixed.map((item) => item.id),
-    ["living", "children", "health"],
-  );
-});
-
-test("四项全勾时没有固定支出，可分配等于手上那笔钱", () => {
-  const all = ["living", "children", "health", "major"];
-  const allocation = computeAllocation(base, all, 800);
-  near(allocation.fixedTotal, 0);
-  near(allocation.free, 800);
-  assert.equal(allocation.fixed.length, 0);
-});
-
-test("反推生活开支时不再要求收益率高于通胀率", () => {
-  const input = { ...base, rate: 2, inflation: 2 };
-  const allocation = computeAllocation(input, ["living"], 1000);
-  near(allocation.fixedTotal, 550);
-  near(allocation.free, 450);
-  assert.deepEqual(validate(input, ["living"]), []);
-});
-
-test("手上的钱不够覆盖固定项时，可分配为负数", () => {
-  const allocation = computeAllocation(base, DEFAULTS.targets, 100);
-  near(allocation.free, -630);
-});
-
-test("反推没勾目标时给出提示", () => {
-  assert.deepEqual(validate(base, []), ["至少勾选一项要反推的内容。"]);
-  assert.ok(validate({ ...base, targetYears: 0 }, ["major"]).includes("希望花完的年份要填 1 到 100 之间的数字。"));
-});
-
-test("负数项逐个报错", () => {
-  const errors = validate({ ...base, monthlyPerPerson: -1, health: -500, major: -1, children: -2 });
-  assert.ok(errors.includes("人均月消费不能是负数。"));
-  assert.ok(errors.includes("健康开销不能是负数。"));
-  assert.ok(errors.includes("重大投入不能是负数。"));
-  assert.ok(errors.includes("孩子数量不能是负数。"));
-});
-
-test("默认参数本身可以通过校验", () => {
-  assert.deepEqual(validate(base), []);
-  assert.deepEqual(validate(base, DEFAULTS.targets), []);
+test("默认参数本身算得出正数，育儿与房子的年份都在 1 起算的范围内", () => {
+  assert.equal(DEFAULTS.children, DEFAULTS.childStartYears.length);
+  assert.ok(DEFAULTS.childStartYears.every((year) => year >= 1));
+  assert.ok(houseTotal(DEFAULTS) > 0);
+  assert.ok(childMonthShare(DEFAULTS.childUnitCost, 0) > 0);
 });
 
 test("未知身份按单人处理", () => {
@@ -115,11 +60,10 @@ test("未知身份按单人处理", () => {
   assert.equal(personsOf("nobody"), 1);
 });
 
-test("金额与百分比按一位小数展示，需要时给两位，无解显示占位符", () => {
+test("金额与百分比按一位小数展示，无解显示占位符", () => {
   assert.equal(formatWan(480), "480");
   assert.equal(formatWan(479.99999999999994), "480");
   assert.equal(formatWan(1234.56), "1,234.6");
-  assert.equal(formatWan(1.2345, 2), "1.23");
   assert.equal(formatWan(Number.NaN), "—");
   assert.equal(formatPercent(4.5), "4.5%");
   assert.equal(formatPercent(25), "25%");

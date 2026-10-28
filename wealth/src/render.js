@@ -1,135 +1,196 @@
 /**
- * 结果卡的 HTML 拼装：只把算好的数字排版成字符串，不碰输入状态与存储。
- * 正推给「需要的资产 + 按收入能撑多久」，反推给「可自由分配 + 每项的独立反推结果」。
+ * 两张结果卡：工作这些年能攒下多少，以及这笔钱能撑多少年。
+ * 只把算好的数字排版成 HTML 字符串，不碰输入状态与存储。
  */
-import { ITEMS, SOLVABLES, computeAllocation, computeNeed, validate } from "./core/calc.js";
+import { CHILD_YEARS, childStartYears } from "./core/calc.js";
 import { formatPercent, formatWan } from "./core/format.js";
-import { MAX_YEARS, simulate, solve } from "./core/simulate.js";
+import { accumulate, runwayMonths } from "./core/simulate.js";
 
-/** 反推结果各自带的单位。 */
-const UNITS = {
-  living: "万元 / 人·月",
-  children: "万元 / 孩",
-  health: "万元",
-  major: "万元",
-  salary: "万元 / 月",
-  workYears: "年",
-};
-
-/** 一个结论块：标题、大字数值、说明。 */
-function blockMarkup(label, value, unit, caption) {
-  const negative = typeof value === "number" && value < 0;
-  const text = typeof value === "number" ? formatWan(value) : value;
-  return `<div class="result-block">
-    <p class="result-label">${label}</p>
-    <p class="result-value${negative ? " is-negative" : ""}">${text}<small>${unit}</small></p>
-    <p class="result-caption">${caption}</p>
-  </div>`;
+/** 月份数换成「几个月 / 几年」，给提示文案用。 */
+function whenText(month) {
+  return month < 12 ? `${Math.max(1, Math.round(month))} 个月` : `${(month / 12).toFixed(1)} 年`;
 }
 
-/** 一条拆解：名称、占比、金额，以及按占比画的条。 */
-function breakdownMarkup(label, value, total) {
-  const share = total > 0 && Number.isFinite(value) ? (value / total) * 100 : 0;
-  const width = Math.max(0, Math.min(100, share)).toFixed(1);
-  return `<li>
-    <div class="breakdown-line"><span class="breakdown-name">${label}</span><span class="breakdown-share">${formatPercent(share)}</span><span class="breakdown-amount">${formatWan(value)}<em>万</em></span></div>
-    <div class="bar"><i style="width: ${width}%"></i></div>
-  </li>`;
-}
-
-/** 正推：四项金额加总，附一条按占比的拆解。 */
-function needMarkup(state) {
-  const need = computeNeed(state);
-  const rows = ITEMS.map((item) => breakdownMarkup(item.label, need.parts[item.id], need.total)).join("");
-  return `<div class="result-block">
-    <p class="result-label">财富自由需要的资产</p>
-    <p class="result-value">${formatWan(need.total)}<small>万元</small></p>
-    <p class="result-caption">一次备齐这些，日常生活、育儿、健康与重大投入都由这笔本金承担。</p>
-    <ul class="breakdown">${rows}</ul>
-  </div>`;
-}
-
-/** 工作结束时攒下的钱够不够付专项支出。 */
-function warningMarkup(run) {
-  if (run.workEnd === null) {
-    const when = !Number.isFinite(run.years)
-      ? "工作期间"
-      : run.years < 1
-        ? `第 ${Math.max(1, Math.round(run.years * 12))} 个月`
-        : `第 ${run.years.toFixed(1)} 年`;
-    return `<p class="result-warn">按现在的收入与支出，${when}就见底了，撑不到工作结束，专项支出更没钱准备。</p>`;
+/** 育儿与房子的逐月扣款说明；没有工作年份时这两项一分没扣，就不写了。 */
+function spendMarkup(state, run) {
+  if (run.workYears <= 0) return "";
+  const notes = [];
+  const years = childStartYears(state);
+  if (run.childTotal > 0) {
+    const start = years.length === 1
+      ? `从第 ${years[0]} 年开始`
+      : `各自从第 ${years.join("、")} 年开始`;
+    notes.push(`育儿 ${formatWan(run.childTotal)} 万按 ${CHILD_YEARS} 年摊到每月、${start}，工作这些年扣掉 ${formatWan(run.childSpent)} 万。`);
   }
-  if (run.shortfall > 0) {
-    return `<p class="result-warn">工作 ${run.workYears} 年攒下约 ${formatWan(run.workEnd)} 万，不够育儿、健康与房子这 ${formatWan(run.oneOff)} 万，还差 ${formatWan(run.shortfall)} 万。</p>`;
+  if (run.houseTotal > 0) {
+    // 年份与 simulate 的 firstMonthOfYear 对齐：空着或填 0 都按第 1 年说
+    const yearOf = (value) => Math.max(1, Math.round(Number(value) || 0));
+    const down = yearOf(state.houseDownYear);
+    const monthlyYear = yearOf(state.houseMonthlyYear);
+    const years = Math.round(Number(state.houseYears) || 0);
+    const downAmount = Number.isFinite(Number(state.houseDown)) ? Number(state.houseDown) : 0;
+    const monthly = Number.isFinite(Number(state.houseMonthly)) ? Number(state.houseMonthly) : 0;
+    const parts = [];
+    if (downAmount > 0) parts.push(`首付 ${formatWan(downAmount)} 万在第 ${down} 年一次付`);
+    if (monthly > 0 && years > 0) {
+      parts.push(`月供 ${formatWan(monthly, 2)} 万 × 12 × ${years} 年从第 ${monthlyYear} 年起扣`);
+    } else {
+      parts.push("全款，没有月供");
+    }
+    notes.push(`房子 ${formatWan(run.houseTotal)} 万：${parts.join("，")}，工作这些年扣掉 ${formatWan(run.houseSpent)} 万。`);
   }
+  return notes.map((note) => `<p class="result-note">${note}</p>`).join("");
+}
+
+/**
+ * 工作结束时的余额怎么变成大数字：只预留医疗；
+ * 没付完的育儿/房贷照实提示还有多少，但不在这一步扣，交给「能撑多少年」按月继续扣。
+ */
+function reserveNote(run) {
+  const parts = [`工作结束时手上 ${formatWan(run.saved)} 万`];
+  if (run.health > 0) parts.push(`预留 ${formatWan(run.health)} 万用于医疗等方面`);
+  const lead = run.health > 0 ? `，剩下的就是上面这笔。` : `，就是上面这笔。`;
+  const pending = run.pending > 0.05
+    ? `<p class="result-note">另外还有 ${formatWan(run.pending)} 万育儿 / 房贷要在工作结束后继续按月付，没从上面这笔里扣。</p>`
+    : "";
+  return `<p class="result-note">${parts.join("，")}${lead}</p>${pending}`;
+}
+
+/** 增长率写成「每年涨 / 每年降」，0 说工资不变，负数是降薪。 */
+function rateText(rate) {
+  const value = Number(rate);
+  if (!Number.isFinite(value) || value === 0) return "工资不变";
+  return value > 0 ? `每年涨 ${formatPercent(value)}` : `每年降 ${formatPercent(Math.abs(value))}`;
+}
+
+/** 涨薪那段话：只有一段时不写「接着 0 年」；两段都不涨就说「工资一直不变」。 */
+function growthText(state, earlyYears, lateYears) {
+  const early = rateText(state.salaryGrowthEarly);
+  const late = rateText(state.salaryGrowthLate);
+  if (earlyYears > 0 && lateYears > 0) {
+    if (early === "工资不变" && late === "工资不变") return "工资一直不变";
+    return `前 ${earlyYears} 年${early}，接着 ${lateYears} 年${late}`;
+  }
+  if (earlyYears > 0) return early === "工资不变" ? "工资一直不变" : early;
+  if (lateYears > 0) return late === "工资不变" ? "工资一直不变" : late;
   return "";
 }
 
-/** 按当前收入逐月推演：这笔钱能撑多少年，以及推演用的口径。 */
-function durationMarkup(run, state) {
-  const value = !Number.isFinite(run.years)
-    ? `${MAX_YEARS}<small>年内花不完</small>`
-    : run.years < 1
-      ? `${Math.max(1, Math.round(run.years * 12))}<small>个月</small>`
-      : `${run.years.toFixed(1)}<small>年</small>`;
-  const caption = `从初始资产 ${formatWan(run.start)} 万起，月薪 ${formatWan(Number(state.salary))} 万、每年涨 ${formatPercent(Number(state.salaryGrowth))}，工作 ${run.workYears} 年；育儿、健康与房子共 ${formatWan(run.oneOff)} 万在工作结束那年一次扣掉，生活费按通胀逐年上涨。`;
-  return `<div class="result-block">
-    <p class="result-label">按现在的收入，钱能撑多久</p>
-    <p class="result-value">${value}</p>
-    <p class="result-caption">${caption}</p>
-  </div>`;
+/** 口径说明：工作时长为 0 时只说初始资金，不写工资与生活费。 */
+function captionText(state, run, earlyYears, lateYears) {
+  if (run.workYears <= 0) {
+    return `工作时长是 0 年：没有工资进账，也不扣生活费，手上只有初始资金 ${formatWan(run.start)} 万。`;
+  }
+  const annual = Number.isFinite(state.annualSalary) ? state.annualSalary : 0;
+  const growth = growthText(state, earlyYears, lateYears);
+  return `从初始资金 ${formatWan(run.start)} 万起，年均工资 ${formatWan(annual)} 万；${growth}；工作 ${run.workYears} 年，每月生活费 ${formatWan(run.monthlySpend)} 万按通胀上涨，收益按 ${formatPercent(Number(state.rate))} 计。`;
 }
 
-/** 反推：拿工作结束时的资产减去固定支出，再把勾中的项单独解出来。 */
-function reverseMarkup(state) {
-  const run = simulate(state);
-  if (run.workEnd === null) {
-    return `<div class="result-block">
-      <p class="result-label">还不能给出结果</p>
-      <p class="result-caption">按现在的收支，还没工作满 ${run.workYears} 年钱就花完了，攒不下可用于分配的资产；先把收入提上去，或把生活费、专项支出压一压。</p>
-    </div>`;
+/** 工作这些年能攒下多少；最后留下的钱已经扣掉育儿、房贷与医疗预留。 */
+export function renderSalary(state) {
+  const run = accumulate(state);
+  const earlyYears = Math.round(Number(state.salaryGrowthYears) || 0);
+  const lateYears = Math.round(Number(state.salaryGrowthLateYears) || 0);
+  const caption = captionText(state, run, earlyYears, lateYears);
+  const label = run.workYears > 0 ? `工作 ${run.workYears} 年后能攒下` : "按现在的设置能攒下";
+  const spend = spendMarkup(state, run);
+
+  // 余额在非首付月份转负：这套收支撑不住，推演停在那里
+  if (run.stopped !== null) {
+    // 还没花到房子的钱，说明是生活费 / 育儿就撑不住了，提示换个方向
+    const advice = run.houseSpent === 0
+      ? "工资撑不住生活费与育儿这些固定开支：把生活费压一压，或者把工资、初始资金填高一点。"
+      : "只有付首付的那个月允许透支，其他月份余额必须为正：把首付年份推后（等手上攒够再买）、压低首付，或者把工资填高一点。";
+    return `<p class="result-label">${label}</p>
+      <p class="result-value">0<small>万元</small></p>
+      <p class="result-caption">${caption}</p>
+      ${spend}
+      <p class="result-warn">第 ${whenText(run.stopped)}余额掉到 ${formatWan(run.stopBalance)} 万，推演停在这里。${advice}</p>`;
   }
 
-  const allocation = computeAllocation(state, state.targets, run.workEnd);
-  const fixed = allocation.fixed.length > 0
-    ? `已固定：${allocation.fixed.map((item) => `${item.label} ${formatWan(item.amount)} 万`).join(" · ")}`
-    : "四项都在待反推里，没有固定的支出。";
-  const caption = allocation.free < 0
-    ? `工作 ${run.workYears} 年攒下约 ${formatWan(run.workEnd)} 万，比固定的 ${formatWan(allocation.fixedTotal)} 万少了 ${formatWan(Math.abs(allocation.free))} 万，先把这个缺口补上。`
-    : `工作 ${run.workYears} 年攒下约 ${formatWan(run.workEnd)} 万，减去固定的 ${formatWan(allocation.fixedTotal)} 万，剩下这些可以自由分配。`;
-  const head = `<div class="result-block">
-    <p class="result-label">可自由分配</p>
-    <p class="result-value${allocation.free < 0 ? " is-negative" : ""}">${formatWan(allocation.free)}<small>万元</small></p>
+  // 首付透支之后一直没补回来，等于欠到最后
+  if (run.debtStart !== null && run.debtEnd === null) {
+    return `<p class="result-label">${label}</p>
+      <p class="result-value">0<small>万元</small></p>
+      <p class="result-caption">${caption}</p>
+      ${spend}
+      <p class="result-warn">第 ${whenText(run.debtStart)}付首付时余额掉到 ${formatWan(run.debtStartBalance)} 万，之后一直没回到正数（最低 ${formatWan(run.lowest)} 万），到工作结束仍在欠钱；把首付压低或把首付年份往后挪。</p>`;
+  }
+
+  if (run.saved <= 0) {
+    const warn = run.workYears > 0
+      ? "最后余额正好是 0，没有可攒下的钱；把生活费、育儿与房贷压一压，或者把工资填高一点。"
+      : "工作时长和初始资金都是 0，没有可攒下的钱；把工作时长或初始资金填上再看。";
+    return `<p class="result-label">${label}</p>
+      <p class="result-value">0<small>万元</small></p>
+      <p class="result-caption">${caption}</p>
+      ${spend}
+      <p class="result-warn">${warn}</p>`;
+  }
+
+  // 首付把钱打穿之后的那段欠款：说清从哪个月开始、哪个月补回来
+  const dip = run.debtStart === null
+    ? ""
+    : run.debtEnd !== null
+      ? `<p class="result-note">第 ${whenText(run.debtStart)}付首付时余额掉到 ${formatWan(run.debtStartBalance)} 万，第 ${whenText(run.debtEnd)}才回到正数；这段相当于先借钱周转，不影响后面继续算。</p>`
+      : `<p class="result-note">第 ${whenText(run.debtStart)}付首付时余额掉到 ${formatWan(run.debtStartBalance)} 万，之后一直没回到正数。</p>`;
+
+  if (run.left < 0) {
+    return `<p class="result-label">${label}</p>
+      <p class="result-value">0<small>万元</small></p>
+      <p class="result-caption">${caption}</p>
+      ${spend}
+      ${dip}
+      ${reserveNote(run)}
+      <p class="result-warn">预留医疗之后还差 ${formatWan(Math.abs(run.left))} 万：把医疗预留压一压，或者把工作时长拉长一点。</p>`;
+  }
+
+  return `<p class="result-label">${label}</p>
+    <p class="result-value">${formatWan(run.left)}<small>万元</small></p>
     <p class="result-caption">${caption}</p>
-    <p class="result-note">${fixed}</p>
-  </div>`;
-
-  const want = Number(state.targetYears);
-  const rows = SOLVABLES.filter((item) => state.targets.includes(item.id)).map((item) => {
-    const solved = solve(state, want, item.id);
-    const text = solved.feasible
-      ? `${formatWan(solved.value, 2)}<em>${UNITS[item.id]}</em>`
-      : '<em>按当前其他参数算不出可行值</em>';
-    return `<li><span class="solve-name">${item.label}</span><span class="solve-value${solved.feasible ? "" : " is-negative"}">${text}</span></li>`;
-  }).join("");
-
-  const tail = `<div class="result-block">
-    <p class="result-label">按第 ${formatWan(want)} 年花完反推</p>
-    <ul class="solve-list">${rows}</ul>
-    <p class="result-caption">其余参数保持当前输入，勾中的每一项各自单独反推；数字表示这一项要多少，钱才刚好撑到第 ${formatWan(want)} 年。</p>
-  </div>`;
-  return head + tail;
+    ${spend}
+    ${dip}
+    ${reserveNote(run)}`;
 }
 
-/** 把当前状态渲染成结果卡内容；参数不合法时只给中文提示。 */
-export function renderResult(state) {
-  const targets = state.mode === "reverse" ? state.targets : null;
-  const errors = validate(state, targets);
-  if (errors.length > 0) {
-    return `<p class="result-label">还不能给出结果</p>
-      <ul class="result-errors">${errors.map((message) => `<li>${message}</li>`).join("")}</ul>`;
+/** 工作结束后这笔钱能撑多久：余额按收益率增值，生活费按通胀涨，没付完的育儿与房贷继续按月扣。 */
+export function renderRunway(state) {
+  const run = accumulate(state);
+  const head = "<p class=\"result-label\">这笔钱能撑</p>";
+
+  if (run.stopped !== null) {
+    return `${head}
+      <p class="result-value">0<small>年</small></p>
+      <p class="result-caption">前面的推演半路就停了，没有可支撑的钱。</p>`;
   }
-  if (state.mode === "reverse") return reverseMarkup(state);
-  const run = simulate(state);
-  return needMarkup(state) + warningMarkup(run) + durationMarkup(run, state);
+
+  const amount = run.left;
+  if (!(amount > 0)) {
+    return `${head}
+      <p class="result-value">0<small>年</small></p>
+      <p class="result-caption">预留医疗之后没有剩下的钱，撑不了。</p>`;
+  }
+
+  const rate = Number(state.rate);
+  const inflation = Number(state.inflation);
+  const monthly = run.monthlySpendAfterWork;
+  const months = runwayMonths(state, amount);
+  const tail = run.pending > 0.05
+    ? `，没付完的 ${formatWan(run.pending)} 万育儿 / 房贷也继续按月扣`
+    : "，育儿与房贷已经付完";
+  const caption = `从 ${formatWan(amount)} 万起，按工作结束时每月 ${formatWan(monthly)} 万的生活费（之后继续按 ${formatPercent(inflation)} 通胀上涨）、年收益 ${formatPercent(rate)} 算${tail}。`;
+
+  if (months === Infinity) {
+    return `${head}
+      <p class="result-value">永远</p>
+      <p class="result-caption">${caption}</p>
+      <p class="result-note">收益跑得过通胀与花销，这笔钱花不完。</p>`;
+  }
+
+  const years = months / 12;
+  const value = years >= 1 ? formatWan(years) : String(Math.max(1, Math.round(months)));
+  const unit = years >= 1 ? "年" : "个月";
+  return `${head}
+    <p class="result-value">${value}<small>${unit}</small></p>
+    <p class="result-caption">${caption}</p>`;
 }

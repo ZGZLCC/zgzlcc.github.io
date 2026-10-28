@@ -72,5 +72,5 @@ createServer((req, res) => {
     res.end(`服务器出错：${error.message}`);
   });
 }).listen(PORT, HOST, () => {
-  console.log(`财富自由计算器：http://${HOST}:${PORT}/`);
+  console.log(`财富计算器：http://${HOST}:${PORT}/`);
 });

@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "财富自由计算器：估算需要的资产、按现有资产反推可分配额度，并按工资推演这笔钱够花多久。",
+  "description": "财富计算器：按月推演工资、生活费、育儿与房贷，算工作这些年最后能攒下多少。",
   "scripts": {
     "dev": "node scripts/serve.mjs",
-    "test": "node test/calc.test.mjs && node test/simulate.test.mjs"
+    "test": "node test/calc.test.mjs && node test/simulate.test.mjs && node test/render.test.mjs"
   }
 }

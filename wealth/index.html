@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="按每月开支、收益率与通胀，加上育儿、健康、房子等大额支出，估算财富自由需要的资产；也可以按工资与初始资产推演这笔钱够花多久，或反过来定下花完的年份，求某项开支、月均工资该是多少。数据只在本地计算。"
+      content="按工资、涨薪与生活费逐月推演工作这些年能攒下多少；育儿按 22 年摊到每月、房子先付首付再还月供，最后扣掉没付完的部分与医疗预留。数据只在本地计算。"
     />
     <link rel="icon" type="image/svg+xml" href="./icon.svg" />
-    <title>财富自由计算器</title>
+    <title>财富计算器</title>
     <link rel="stylesheet" href="./src/styles/base.css" />
     <link rel="stylesheet" href="./src/styles/controls.css" />
     <link rel="stylesheet" href="./src/styles/app.css" />
@@ -38,8 +38,8 @@
           </svg>
         </div>
         <div class="brand-copy">
-          <p class="eyebrow">FINANCIAL INDEPENDENCE</p>
-          <h1>财富自由计算器</h1>
+          <p class="eyebrow">WEALTH CALCULATOR</p>
+          <h1>财富计算器</h1>
         </div>
         <div class="theme-switch" role="radiogroup" aria-label="主题">
           <label>
@@ -71,73 +71,12 @@
         </div>
       </header>
 
-      <nav class="mode-switch" aria-label="计算方式">
-        <label>
-          <input type="radio" name="mode" value="need" checked />
-          <span>算需要多少</span>
-        </label>
-        <label>
-          <input type="radio" name="mode" value="reverse" />
-          <span>按目标反推</span>
-        </label>
-      </nav>
-
       <div class="calc-stack">
         <form class="panel form-panel" id="form" autocomplete="off" novalidate>
           <section class="form-section">
             <div class="section-heading">
-              <h2>起点与收入</h2>
-              <p>从初始资产开始，工资逐月进来、生活费逐月扣掉，看这笔钱能撑多久。</p>
-            </div>
-            <div class="field-row">
-              <label class="field">
-                <span class="field-label">初始资产<em>万元</em></span>
-                <input type="number" data-field="initialAssets" min="0" step="1" inputmode="decimal" />
-              </label>
-              <label class="field" data-group="salary">
-                <span class="field-label">月均工资<em>万元 / 月</em></span>
-                <input type="number" data-field="salary" min="0" step="0.1" inputmode="decimal" />
-              </label>
-            </div>
-            <div class="field-row">
-              <label class="field">
-                <span class="field-label">工资年增长率<em>%</em></span>
-                <input type="number" data-field="salaryGrowth" min="0" step="0.5" inputmode="decimal" />
-              </label>
-              <label class="field" data-group="workYears">
-                <span class="field-label">工作时长<em>年</em></span>
-                <input type="number" data-field="workYears" min="0" step="1" inputmode="numeric" />
-              </label>
-            </div>
-          </section>
-
-          <section class="form-section" data-when="reverse" hidden>
-            <div class="section-heading">
-              <h2>反推目标</h2>
-              <p>想让它刚好在第几年花完，再勾出要反推的项。</p>
-            </div>
-            <label class="field">
-              <span class="field-label">希望第几年花完<em>年</em></span>
-              <input type="number" data-field="targetYears" min="1" max="100" step="1" inputmode="numeric" />
-            </label>
-            <fieldset>
-              <legend class="field-label">想反推的部分</legend>
-              <ul class="targets">
-                <li><label class="target"><input type="checkbox" data-target value="living" /><span>日常生活</span></label></li>
-                <li><label class="target"><input type="checkbox" data-target value="children" /><span>育儿</span></label></li>
-                <li><label class="target"><input type="checkbox" data-target value="health" /><span>健康</span></label></li>
-                <li><label class="target"><input type="checkbox" data-target value="major" /><span>重大投入</span></label></li>
-                <li><label class="target"><input type="checkbox" data-target value="salary" /><span>月均工资</span></label></li>
-                <li><label class="target"><input type="checkbox" data-target value="workYears" /><span>工作时长</span></label></li>
-              </ul>
-              <p class="field-hint">勾中的项各自单独反推：只改这一项、其余按当前输入，正好在第 N 年花完需要多少；没勾的按上面填的数字锁定。</p>
-            </fieldset>
-          </section>
-
-          <section class="form-section">
-            <div class="section-heading">
               <h2>生活开支</h2>
-              <p>先定下每月花多少，再说这笔钱要多大才能一直覆盖它。</p>
+              <p>先定下每月花多少（不含房贷与育儿），这是逐月推演里最稳定的一笔支出。</p>
             </div>
             <fieldset>
               <legend class="field-label">一个人住，还是两个人</legend>
@@ -146,7 +85,7 @@
                 <label><input type="radio" name="identity" value="couple" /><span>夫妻</span></label>
               </div>
             </fieldset>
-            <label class="field" data-group="living">
+            <label class="field">
               <span class="field-label">人均月消费<em>万元 / 月</em></span>
               <input type="number" data-field="monthlyPerPerson" min="0" step="0.1" inputmode="decimal" />
               <small id="spend-hint"></small>
@@ -166,28 +105,68 @@
           <section class="form-section">
             <div class="section-heading">
               <h2>专项支出</h2>
-              <p>一次性或分几年投下去的大额开销。</p>
+              <p>育儿按 22 年摊到每月，房子先付首付、之后按月还贷；填上各自开始的年份，它们就会从每月的现金流里扣掉。</p>
             </div>
-            <div class="field-row">
-              <label class="field">
-                <span class="field-label">孩子数量<em>个</em></span>
-                <input type="number" data-field="children" min="0" step="1" inputmode="numeric" />
-              </label>
-              <label class="field" data-group="children">
-                <span class="field-label">育儿总成本<em>万元 / 孩</em></span>
-                <input type="number" data-field="childUnitCost" min="0" step="1" inputmode="decimal" />
-              </label>
-            </div>
-            <div class="field-row">
-              <label class="field" data-group="health">
-                <span class="field-label">健康开销<em>万元</em></span>
-                <input type="number" data-field="health" min="0" step="1" inputmode="decimal" />
-              </label>
-              <label class="field" data-group="major">
-                <span class="field-label">重大投入<em>万元 · 主要是房子</em></span>
-                <input type="number" data-field="major" min="0" step="1" inputmode="decimal" />
-              </label>
-            </div>
+
+            <fieldset class="field-group" data-group="children">
+              <legend class="field-label">育儿<em>22 年 · 出生到大学毕业</em></legend>
+              <div class="field-group-body">
+                <div class="field-row">
+                  <label class="field">
+                    <span class="field-label">孩子数量<em>个</em></span>
+                    <input type="number" data-field="children" min="0" step="1" inputmode="numeric" />
+                  </label>
+                  <label class="field">
+                    <span class="field-label">育儿总成本<em>万元 / 孩</em></span>
+                    <input type="number" data-field="childUnitCost" min="0" step="1" inputmode="decimal" />
+                  </label>
+                </div>
+                <div class="field-row" id="child-years"></div>
+                <small class="field-note">生活费里不含育儿，这里单独扣；每个孩子自己填开始年份（工作第几年，从 1 数起），金额按 22 年摊开且不随通胀调整。</small>
+              </div>
+            </fieldset>
+
+            <fieldset class="field-group" data-group="major">
+              <legend class="field-label">房子<em>首付 + 月供</em></legend>
+              <div class="field-group-body">
+                <div class="field-row">
+                  <label class="field">
+                    <span class="field-label">首付<em>万元</em></span>
+                    <input type="number" data-field="houseDown" min="0" step="1" inputmode="decimal" />
+                  </label>
+                  <label class="field">
+                    <span class="field-label">首付年份<em>工作第几年</em></span>
+                    <input type="number" data-field="houseDownYear" min="1" step="1" inputmode="numeric" />
+                  </label>
+                </div>
+                <div class="field-row">
+                  <label class="field">
+                    <span class="field-label">房贷月供<em>万元 / 月</em></span>
+                    <input type="number" data-field="houseMonthly" min="0" step="0.05" inputmode="decimal" />
+                  </label>
+                  <label class="field">
+                    <span class="field-label">月供开始年份<em>工作第几年</em></span>
+                    <input type="number" data-field="houseMonthlyYear" min="1" step="1" inputmode="numeric" />
+                  </label>
+                </div>
+                <label class="field">
+                  <span class="field-label">房贷年数<em>年</em></span>
+                  <input type="number" data-field="houseYears" min="0" step="1" inputmode="numeric" />
+                  <small>全款就把月供填 0，房子只花首付；月供按名义金额固定，不随通胀调整。</small>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="field-group" data-group="health">
+              <legend class="field-label">健康<em>工作结束时预留</em></legend>
+              <div class="field-group-body">
+                <label class="field">
+                  <span class="field-label">健康开销<em>万元</em></span>
+                  <input type="number" data-field="health" min="0" step="1" inputmode="decimal" />
+                  <small>这笔钱不从每月现金流里扣，而是工作结束时先留出来，专门用于医疗等方面。</small>
+                </label>
+              </div>
+            </fieldset>
           </section>
 
           <div class="form-actions">
@@ -195,13 +174,52 @@
           </div>
         </form>
 
-        <aside class="panel result-panel">
-          <div id="result" class="result-body" aria-live="polite"></div>
-        </aside>
+        <section class="panel salary-panel" id="salary-panel" aria-labelledby="salary-title">
+          <div class="section-heading">
+            <h2 id="salary-title">工资计算</h2>
+            <p>工资前一段涨得快、之后放缓：每月的工资进账、生活费与理财收益逐月累加，最后看手上能留下多少。</p>
+          </div>
+          <div class="field-row">
+            <label class="field">
+              <span class="field-label">初始资金<em>万元</em></span>
+              <input type="number" data-salary="initialAssets" min="0" step="1" inputmode="decimal" />
+            </label>
+            <label class="field">
+              <span class="field-label">年均工资<em>万元 / 年</em></span>
+              <input type="number" data-salary="annualSalary" min="0" step="0.5" inputmode="decimal" />
+            </label>
+          </div>
+          <div class="field-row">
+            <label class="field">
+              <span class="field-label">前期年数<em>年</em></span>
+              <input type="number" data-salary="salaryGrowthYears" min="0" step="1" inputmode="numeric" />
+            </label>
+            <label class="field">
+              <span class="field-label">前期年增长<em>%</em></span>
+              <input type="number" data-salary="salaryGrowthEarly" min="0" step="0.5" inputmode="decimal" />
+            </label>
+          </div>
+          <div class="field-row">
+            <label class="field">
+              <span class="field-label">后期年数<em>年</em></span>
+              <input type="number" data-salary="salaryGrowthLateYears" min="0" step="1" inputmode="numeric" />
+            </label>
+            <label class="field">
+              <span class="field-label">后期年增长<em>%</em></span>
+              <input type="number" data-salary="salaryGrowthLate" min="-100" step="0.5" inputmode="decimal" />
+              <small>可以填负数表示降薪，最低 -100%（工资降到 0）。</small>
+            </label>
+          </div>
+          <div id="salary-result" class="result-body" aria-live="polite"></div>
+        </section>
+
+        <section class="panel runway-panel" id="runway-panel" aria-label="这笔钱能撑多少年">
+          <div id="runway-result" class="result-body" aria-live="polite"></div>
+        </section>
       </div>
 
       <footer class="app-footer">
-        <p>这里的财富自由，指以理想的生活开支水平、不工作的方式一直维持到老，资产不缩水、购买力不下降所需要的资产。</p>
+        <p>这里的数字是工作期间的现金流推演：工资进账、生活费按通胀上涨，育儿与房贷按月扣；工作结束时的余额要先留出还没付完的育儿与房贷，再预留一笔医疗开销，剩下的才是最后能攒下来的钱。最下面那张卡再算这笔钱按同样的收益率与通胀能撑多少年。</p>
       </footer>
     </main>
     <script type="module" src="./src/app.js"></script>
