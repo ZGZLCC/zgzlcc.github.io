@@ -49,4 +49,4 @@ pnpm preview    # http://localhost:4321/wealth/
 
 ## 发布位置
 
-仓库根目录的 `pnpm build` 依次执行 Astro 构建、pagefind 索引与 `script/momo/build-web.js`；后者在复制 `/time/` 之后，把本目录的 `index.html`、`icon.svg` 与 `src/` 复制到 `dist/wealth/`，随 GitHub Pages 一起上线。`test/`、`scripts/`、`package.json` 与本文档不参与部署。
+仓库根目录的 `pnpm build` 依次执行 Astro 构建、pagefind 索引与 `script/momo/build-static.js`；后者把本目录的 `index.html`、`icon.svg` 与 `src/` 复制到 `dist/wealth/`，随 GitHub Pages 一起上线。Time 网站版已迁到独立仓库 `Time` 的 `web/`，由该仓库的 Actions 发布在 `/time/`，不再参与本站构建。`test/`、`scripts/`、`package.json` 与本文档不参与部署。
